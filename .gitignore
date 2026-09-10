@@ -1,0 +1,27 @@
+# Planning & Agent Specifications (Local Only)
+0*.md
+# Or if you moved them into a folder:
+.specs/
+docs/planning/
+
+# Environment & Secrets (NEVER COMMIT)
+.env
+.env.local
+*.env
+
+# Python & Virtual Environments
+__pycache__/
+*.py[cod]
+.venv/
+env/
+venv/
+.uv/
+
+# Local Vector Storage & Caches
+qdrant_storage/
+.cache/
+*.npz
+
+# OS files
+.DS_Store
+Thumbs.db
