@@ -127,12 +127,12 @@
     /* ─── Header ──────────────────────────────────────────────────── */
     #app-header {
       flex-shrink: 0;
-      background: rgba(17,17,19,0.92);
+      background: rgba(17,17,19,0.94);
       backdrop-filter: blur(24px);
       -webkit-backdrop-filter: blur(24px);
       border-bottom: 1px solid var(--glass-border);
       padding: 0 24px;
-      height: 60px;
+      height: 48px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -144,12 +144,12 @@
     .brand {
       display: flex;
       align-items: center;
-      gap: 11px;
+      gap: 10px;
       flex-shrink: 0;
     }
     .brand-icon {
-      width: 36px; height: 36px;
-      border-radius: 10px;
+      width: 30px; height: 30px;
+      border-radius: 8px;
       background: var(--surface-3);
       box-shadow: var(--neu-shadow-sm);
       display: flex; align-items: center; justify-content: center;
@@ -163,13 +163,18 @@
     }
     .brand-icon svg { position: relative; z-index: 1; }
     .brand-name {
-      font-size: 15px; font-weight: 700;
+      font-size: 14px; font-weight: 700;
       letter-spacing: -0.02em;
       color: var(--text);
     }
+    .brand-sep {
+      width: 1px; height: 16px;
+      background: var(--glass-border-strong);
+      flex-shrink: 0;
+    }
     .brand-sub {
       font-size: 11px; color: var(--text-dim);
-      font-weight: 400; margin-top: 1px;
+      font-weight: 400;
       display: none;
     }
     @media (min-width: 640px) { .brand-sub { display: block; } }
@@ -177,7 +182,7 @@
     /* Stats Pill */
     .stats-pill {
       display: flex; align-items: center; gap: 6px;
-      padding: 5px 12px;
+      padding: 4px 11px;
       border-radius: 99px;
       background: var(--surface-2);
       box-shadow: var(--neu-shadow-sm);
@@ -187,68 +192,139 @@
       flex-shrink: 0;
     }
     .status-dot {
-      width: 7px; height: 7px;
+      width: 6px; height: 6px;
       border-radius: 50%;
       background: var(--green);
     }
 
-    /* Search */
-    .search-wrap {
-      flex: 1; max-width: 620px;
-      position: relative;
+    /* ─── Search Zone ─────────────────────────────────────────────── */
+    #search-zone {
+      flex-shrink: 0;
+      background: rgba(20,20,23,0.88);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--glass-border);
+      padding: 14px 24px;
+      z-index: 40;
+      transition: border-color 0.25s, box-shadow 0.25s;
     }
-    .search-icon {
-      position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
-      color: var(--text-dim); pointer-events: none;
+    #search-zone.focused {
+      border-bottom-color: rgba(201,169,110,0.3);
+      box-shadow: 0 4px 32px rgba(201,169,110,0.07);
+    }
+    .search-zone-inner {
+      max-width: 900px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    /* Row: input + button */
+    .search-input-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--surface-2);
+      box-shadow:
+        inset 3px 3px 8px rgba(0,0,0,0.65),
+        inset -2px -2px 5px rgba(255,255,255,0.04),
+        0 0 0 1px var(--glass-border);
+      border-radius: 13px;
+      padding: 0 8px 0 16px;
+      transition: box-shadow 0.2s;
+    }
+    .search-input-row.focused {
+      box-shadow:
+        inset 3px 3px 8px rgba(0,0,0,0.65),
+        inset -2px -2px 5px rgba(255,255,255,0.04),
+        0 0 0 1px rgba(201,169,110,0.4),
+        0 0 24px rgba(201,169,110,0.1);
+    }
+    .search-lead-icon {
+      color: var(--text-dim);
+      flex-shrink: 0;
+      transition: color 0.2s;
+      display: flex; align-items: center;
+    }
+    .search-input-row.focused .search-lead-icon {
+      color: var(--accent);
     }
     #query-input {
-      width: 100%; height: 38px;
-      background: var(--surface-2);
-      box-shadow: var(--neu-shadow-in);
-      border: 1px solid var(--glass-border);
-      border-radius: 10px;
-      padding: 0 44px 0 38px;
-      font-size: 13px; font-family: inherit;
+      flex: 1;
+      height: 50px;
+      background: transparent;
+      border: none;
+      padding: 0 10px;
+      font-size: 14px; font-family: inherit;
       color: var(--text);
       outline: none;
-      transition: border-color 0.2s, box-shadow 0.2s;
+      caret-color: var(--accent);
     }
-    #query-input::placeholder { color: var(--text-dim); }
-    #query-input:focus {
-      border-color: rgba(201,169,110,0.4);
-      box-shadow:
-        var(--neu-shadow-in),
-        0 0 0 3px var(--accent-dim);
+    #query-input::placeholder {
+      color: var(--text-dim);
+      font-size: 13.5px;
     }
     #spinner-wrap {
-      position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+      display: flex; align-items: center;
+      flex-shrink: 0;
     }
-
-    /* Ask button */
+    /* Ask button — embedded inside the row */
     #ask-btn {
-      height: 38px; padding: 0 18px;
-      border-radius: 10px;
+      height: 36px; padding: 0 20px;
+      border-radius: 9px;
       background: linear-gradient(135deg, var(--accent), var(--accent-2));
       border: none; cursor: pointer;
-      font-size: 12px; font-weight: 600; font-family: inherit;
-      color: #0e0c09;
-      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; font-weight: 700; font-family: inherit;
+      color: #0c0a05;
+      display: flex; align-items: center; gap: 7px;
       box-shadow:
-        3px 3px 8px rgba(0,0,0,0.5),
-        -1px -1px 4px rgba(201,169,110,0.1),
-        0 0 14px rgba(201,169,110,0.12);
+        2px 2px 6px rgba(0,0,0,0.5),
+        -1px -1px 3px rgba(201,169,110,0.08),
+        0 0 14px rgba(201,169,110,0.15);
       transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
       white-space: nowrap; flex-shrink: 0;
+      letter-spacing: 0.02em;
     }
     #ask-btn:hover {
       transform: translateY(-1px);
       box-shadow:
-        4px 4px 12px rgba(0,0,0,0.5),
-        -1px -1px 4px rgba(201,169,110,0.12),
-        0 0 20px rgba(201,169,110,0.2);
+        3px 3px 10px rgba(0,0,0,0.55),
+        -1px -1px 3px rgba(201,169,110,0.1),
+        0 0 22px rgba(201,169,110,0.22);
     }
     #ask-btn:active { transform: translateY(0); }
-    #ask-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    #ask-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+    /* Bottom row: hint + char count */
+    .search-meta-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 4px;
+    }
+    .search-hint {
+      display: flex; align-items: center; gap: 12px;
+    }
+    .hint-tag {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 10.5px; color: var(--text-dim);
+    }
+    .kbd {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 1px 5px;
+      border-radius: 4px;
+      background: var(--surface-3);
+      border: 1px solid var(--glass-border-strong);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px; color: var(--text-dim);
+      box-shadow: var(--neu-shadow-sm);
+    }
+    #char-count {
+      font-size: 10.5px;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-dim);
+      transition: color 0.2s;
+    }
+    #char-count.warn { color: #c97070; }
 
     /* ─── Answer Banner ───────────────────────────────────────────── */
     #answer-banner {
@@ -654,55 +730,79 @@
   <!-- 1. TOP HEADER BAR                                             -->
   <!-- ══════════════════════════════════════════════════════════════ -->
   <header id="app-header">
-
     <!-- Brand -->
     <div class="brand">
       <div class="brand-icon">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
           <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"
                 fill="#c9a96e" stroke="#c9a96e" stroke-width="0.5"
                 stroke-linejoin="round"/>
         </svg>
       </div>
-      <div>
-        <div class="brand-name">ChronoRag</div>
-        <div class="brand-sub">Timestamp-Accurate DSA Intelligence · 126 Lectures</div>
-      </div>
+      <div class="brand-name">ChronoRag</div>
+      <div class="brand-sep"></div>
+      <div class="brand-sub">Timestamp-Accurate DSA Intelligence</div>
     </div>
-
-    <!-- Search -->
-    <div class="search-wrap">
-      <span class="search-icon">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-        </svg>
-      </span>
-      <input
-        id="query-input"
-        type="text"
-        placeholder="Ask a DSA question… (e.g. binary search, LCS memoization, Dijkstra)"
-        autocomplete="off"
-        spellcheck="false"
-      />
-      <div id="spinner-wrap" class="hidden">
-        <div class="spin-ring spinner"></div>
-      </div>
-    </div>
-
-    <!-- Right side: Ask button + Stats -->
-    <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
-      <div class="stats-pill">
-        <span class="status-dot breathe"></span>
-        <span id="stat-text">4,140 chunks · 126 videos</span>
-      </div>
-      <button id="ask-btn" onclick="handleAsk()">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-        </svg>
-        <span>Ask</span>
-      </button>
+    <!-- Stats -->
+    <div class="stats-pill">
+      <span class="status-dot breathe"></span>
+      <span id="stat-text">4,140 chunks · 126 videos</span>
     </div>
   </header>
+
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!-- 1b. SEARCH ZONE                                               -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <div id="search-zone">
+    <div class="search-zone-inner">
+
+      <!-- Input row -->
+      <div class="search-input-row" id="search-input-row">
+        <!-- Lead icon -->
+        <span class="search-lead-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
+        </span>
+
+        <input
+          id="query-input"
+          type="text"
+          placeholder="Ask anything about DSA — binary search, LCS, Dijkstra, two-pointer…"
+          autocomplete="off"
+          spellcheck="false"
+          maxlength="500"
+        />
+
+        <div id="spinner-wrap" class="hidden">
+          <div class="spin-ring spinner"></div>
+        </div>
+
+        <button id="ask-btn" onclick="handleAsk()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/>
+          </svg>
+          <span>Ask</span>
+        </button>
+      </div>
+
+      <!-- Meta row: hints + char count -->
+      <div class="search-meta-row">
+        <div class="search-hint">
+          <span class="hint-tag">
+            <kbd class="kbd">Enter</kbd>
+            to submit
+          </span>
+          <span class="hint-tag">
+            <kbd class="kbd">Esc</kbd>
+            to clear
+          </span>
+        </div>
+        <span id="char-count">0 / 500</span>
+      </div>
+
+    </div>
+  </div>
 
   <!-- ══════════════════════════════════════════════════════════════ -->
   <!-- 2. ANSWER BANNER                                              -->
@@ -1170,8 +1270,32 @@
     }
 
     /* ── Init ───────────────────────────────────────────────────── */
-    document.getElementById('query-input').addEventListener('keydown', e => {
-      if (e.key === 'Enter' && !e.shiftKey) handleAsk();
+    const inputEl  = document.getElementById('query-input');
+    const inputRow = document.getElementById('search-input-row');
+    const zone     = document.getElementById('search-zone');
+    const charEl   = document.getElementById('char-count');
+
+    // Focus glow
+    inputEl.addEventListener('focus', () => {
+      inputRow.classList.add('focused');
+      zone.classList.add('focused');
+    });
+    inputEl.addEventListener('blur', () => {
+      inputRow.classList.remove('focused');
+      zone.classList.remove('focused');
+    });
+
+    // Char counter
+    inputEl.addEventListener('input', () => {
+      const len = inputEl.value.length;
+      charEl.textContent = `${len} / 500`;
+      charEl.classList.toggle('warn', len > 450);
+    });
+
+    // Keyboard shortcuts
+    inputEl.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAsk(); }
+      if (e.key === 'Escape') { inputEl.value = ''; charEl.textContent = '0 / 500'; charEl.classList.remove('warn'); }
     });
 
     fetch('/api/stats')
