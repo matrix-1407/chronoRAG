@@ -26,23 +26,33 @@ from models import Citation, ComplexityBadge, RAGResponse, parse_badge
 # ── System prompt (exact, immutable) ──────────────────────────────────────
 
 SYSTEM_PROMPT = """\
-Tum ek DSA tutor ho jo "Padho with Pratyush" YouTube lectures padhate ho.
-Tumhare paas sirf neeche diye lecture transcripts ka access hai.
+You are an expert DSA mentor answering questions based on video lecture transcripts.
 
-STRICT RULES — inhe kabhi mat todo:
-1. KABHI BHI code snippet mat likho — na Python, na C++, na pseudocode.
-2. Sirf 3-4 sentences mein concept explain karo — clear aur simple Hinglish mein.
-3. Har response ke end mein EXACTLY yeh badge likho:
-   [Time: O(...) | Space: O(...) | Pattern: ...]
-   Agar complexity unknown ho toh "O(?)" likho.
-4. Agar provided transcripts mein answer nahi milta, likho:
-   "Ye topic in lectures me cover nahi hua."
-5. Kabhi bhi apni general knowledge use mat karo — sirf transcripts se answer do.
-6. Jab bhi kisi transcript se point lo, uska reference [1], [2] etc. lagao.
+LANGUAGE & TONE:
+- Primary Language: English with a light, natural touch of Hinglish (e.g., "basically", "dhyan do", "divide karte hain", "yaad rakho").
+- Adaptable: Handle questions asked in English, Hinglish, or Hindi seamlessly with the same crisp style.
 
-FORMAT (strict):
-<3-4 sentence Hinglish explanation with inline [N] citations>
-[Time: O(...) | Space: O(...) | Pattern: ...]"""
+CRITICAL REQUIREMENT — BE CONCISE & TO THE POINT:
+- Keep the entire explanation compact (around 3-4 concise bullet points or 1-2 tight paragraphs, max 100-140 words total).
+- Avoid long introductory fluff, greetings, repetitive disclaimers, or full code blocks.
+- STRICT FORMATTING:
+  * NEVER output markdown headers (NO #, ##, ###).
+  * NEVER output LaTeX blocks or dollar signs (NO $ or $$ or \text{}). Write formulas in plain clean text.
+  * Use bold labels like **Core Intuition:** or **How it works:**.
+  * Use single citation brackets like [1] or [2] (do not combine like [1, 2]).
+- Explain:
+  1. Core intuition (what and why).
+  2. How it works in 2-3 brief logical steps.
+  3. Inline citations [1], [2] referencing the transcript source for timestamps.
+
+MANDATORY BADGE (exact line at the very end):
+[Time: O(...) | Space: O(...) | Pattern: ...]
+(Deduce standard time/space complexity if not explicitly mentioned).
+
+OUT-OF-DOMAIN REFUSAL:
+If the topic or question is NOT covered in the provided lecture transcripts, output ONLY:
+"Ye topic in lectures me cover nahi hua."
+"""
 
 # ── Gemini client singleton ────────────────────────────────────────────────
 
@@ -58,17 +68,18 @@ def _get_gemini_client() -> genai.Client:
 
 # ── Context assembly ───────────────────────────────────────────────────────
 
-def _build_context(points: list[ScoredPoint]) -> str:
+def _build_context(points: list[ScoredPoint], max_chunks: int = 5, max_chars_per_chunk: int = 750) -> str:
     """
     Assemble numbered transcript blocks for the user turn.
-    Caps at 5 transcripts; each block capped at 800 chars to stay within budget.
+    Uses top chunks with enough depth (750 chars each) to supply complete
+    algorithmic context and accurate timestamps.
     """
     blocks: list[str] = []
-    for i, pt in enumerate(points[:5], start=1):
+    for i, pt in enumerate(points[:max_chunks], start=1):
         p = pt.payload or {}
         title = p.get("title", "Unknown Lecture")
         start = p.get("start_sec", 0)
-        text = (p.get("text", ""))[:800]
+        text = (p.get("text", ""))[:max_chars_per_chunk].strip()
         blocks.append(f"[TRANSCRIPT {i} — {title} @ {int(start)}s]\n{text}")
     return "\n\n".join(blocks)
 
@@ -189,6 +200,7 @@ def answer(
             top_p=config.TOP_P,
             top_k=config.TOP_K_GEMINI,
             candidate_count=1,
+            thinking_config=genai_types.ThinkingConfig(thinking_budget=0),
         ),
     )
 

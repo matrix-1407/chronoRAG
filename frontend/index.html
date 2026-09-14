@@ -3,31 +3,29 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DSA TubeRAG — Padho with Pratyush</title>
-  <meta name="description" content="Timestamp-accurate RAG system for the Padho with Pratyush DSA playlist. Ask DSA questions in Hinglish and jump directly to the lecture timestamp." />
+  <title>ChronoRag — Timestamp-Accurate DSA Video Intelligence</title>
+  <meta name="description" content="Timestamp-accurate RAG system for DSA video lectures. Ask DSA questions and jump directly to the exact lecture timestamp." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     /* ── Design Tokens ───────────────────────────────────────────── */
     :root {
-      --bg-base:     #0a0f1e;
-      --bg-panel:    #111827;
-      --bg-card:     #1a2235;
-      --bg-input:    #1e2a3a;
-      --border:      #2a3a52;
+      --bg-base:     #090d16;
+      --bg-panel:    #0f172a;
+      --bg-card:     #162033;
+      --bg-input:    #1c283f;
+      --border:      #26354f;
       --accent:      #6366f1;
-      --accent-glow: #6366f140;
+      --accent-glow: #6366f133;
       --accent-2:    #8b5cf6;
-      --green:       #22c55e;
-      --blue:        #3b82f6;
-      --purple:      #a855f7;
+      --green:       #10b981;
+      --blue:        #38bdf8;
+      --purple:      #c084fc;
       --amber:       #f59e0b;
-      --text:        #f1f5f9;
+      --text:        #f8fafc;
       --text-muted:  #94a3b8;
-      --text-dim:    #475569;
-      --highlight:   #fef3c720;
-      --highlight-border: #f59e0b;
+      --text-dim:    #64748b;
       --radius:      12px;
       --radius-sm:   8px;
     }
@@ -36,7 +34,7 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; overflow: hidden; }
     body {
-      font-family: 'Inter', system-ui, sans-serif;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
       background: var(--bg-base);
       color: var(--text);
       display: flex;
@@ -48,7 +46,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 12px 20px;
+      padding: 12px 24px;
       background: var(--bg-panel);
       border-bottom: 1px solid var(--border);
       flex-shrink: 0;
@@ -57,28 +55,30 @@
     .header-brand {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
     }
     .header-logo {
-      width: 32px; height: 32px;
+      width: 34px; height: 34px;
       background: linear-gradient(135deg, var(--accent), var(--accent-2));
-      border-radius: 8px;
+      border-radius: 9px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 16px;
+      font-size: 17px;
+      box-shadow: 0 2px 10px var(--accent-glow);
     }
     .header-title {
-      font-size: 16px; font-weight: 700;
-      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      font-size: 17px; font-weight: 700;
+      letter-spacing: -0.01em;
+      background: linear-gradient(135deg, #ffffff 40%, #c7d2fe);
       -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     }
     .header-sub { font-size: 12px; color: var(--text-muted); }
     .header-stats {
-      display: flex; align-items: center; gap: 16px;
+      display: flex; align-items: center; gap: 12px;
       font-size: 12px; color: var(--text-muted);
     }
     .stat-pill {
       background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: 20px; padding: 4px 12px;
+      border-radius: 20px; padding: 5px 12px;
       display: flex; align-items: center; gap: 6px;
     }
     .stat-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
@@ -90,7 +90,7 @@
       overflow: hidden;
     }
 
-    /* ── LEFT — Player Panel ─────────────────────────────────────── */
+    /* ── LEFT — Video Player Panel ───────────────────────────────── */
     .player-panel {
       width: 50%;
       display: flex;
@@ -111,7 +111,7 @@
       width: 100%; height: 100%;
     }
     .player-info {
-      padding: 12px 16px;
+      padding: 14px 18px;
       background: var(--bg-panel);
       border-top: 1px solid var(--border);
       display: flex;
@@ -120,22 +120,25 @@
       gap: 12px;
       flex-shrink: 0;
     }
-    .player-meta { display: flex; flex-direction: column; gap: 2px; }
-    .player-title { font-size: 13px; font-weight: 600; color: var(--text); }
-    .player-timestamp { font-size: 11px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+    .player-meta { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+    .player-title {
+      font-size: 13px; font-weight: 600; color: var(--text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .player-timestamp {
+      font-size: 11px; color: var(--text-muted);
+      font-variant-numeric: tabular-nums;
+    }
     .live-badge {
-      display: flex; align-items: center; gap: 5px;
+      display: flex; align-items: center; gap: 6px;
       font-size: 11px; font-weight: 600; color: var(--amber);
-      background: #f59e0b15; border: 1px solid #f59e0b40;
+      background: #f59e0b15; border: 1px solid #f59e0b35;
       border-radius: 20px; padding: 3px 10px;
-      animation: pulse-badge 2s ease-in-out infinite;
+      flex-shrink: 0;
     }
-    .live-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--amber); }
-    @keyframes pulse-badge {
-      0%, 100% { opacity: 1; } 50% { opacity: 0.6; }
-    }
+    .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--amber); }
 
-    /* ── RIGHT — Query Panel ─────────────────────────────────────── */
+    /* ── RIGHT — Content & QA Panel ──────────────────────────────── */
     .query-panel {
       flex: 1;
       display: flex;
@@ -146,7 +149,7 @@
 
     /* Search bar */
     .search-section {
-      padding: 16px;
+      padding: 16px 20px;
       background: var(--bg-panel);
       border-bottom: 1px solid var(--border);
       flex-shrink: 0;
@@ -161,7 +164,7 @@
       background: var(--bg-input);
       border: 1px solid var(--border);
       border-radius: var(--radius-sm);
-      padding: 10px 14px;
+      padding: 11px 16px;
       font-size: 14px;
       font-family: inherit;
       color: var(--text);
@@ -176,13 +179,13 @@
     #ask-btn {
       background: linear-gradient(135deg, var(--accent), var(--accent-2));
       border: none; border-radius: var(--radius-sm);
-      padding: 10px 20px;
+      padding: 11px 22px;
       font-size: 14px; font-weight: 600; font-family: inherit;
       color: #fff; cursor: pointer;
       transition: transform 0.15s, box-shadow 0.15s;
       white-space: nowrap;
     }
-    #ask-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 15px var(--accent-glow); }
+    #ask-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 14px var(--accent-glow); }
     #ask-btn:active { transform: translateY(0); }
     #ask-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
@@ -190,7 +193,7 @@
     .content-area {
       flex: 1;
       overflow-y: auto;
-      padding: 16px;
+      padding: 20px;
       display: flex;
       flex-direction: column;
       gap: 16px;
@@ -200,7 +203,7 @@
     .content-area::-webkit-scrollbar { width: 5px; }
     .content-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
-    /* Loading spinner */
+    /* Loading state */
     #loading-state {
       display: none;
       align-items: center;
@@ -222,121 +225,277 @@
     @keyframes spin { to { transform: rotate(360deg); } }
     .loading-text { font-size: 13px; color: var(--text-muted); }
 
-    /* Answer card */
-    #answer-card {
+    /* Summary Card */
+    #summary-card {
       display: none;
       flex-direction: column;
       gap: 12px;
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 16px;
-      animation: fadeIn 0.3s ease;
+      padding: 18px 20px;
+      animation: fadeIn 0.25s ease;
     }
-    #answer-card.visible { display: flex; }
+    #summary-card.visible { display: flex; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 
-    .answer-label {
-      font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
-      text-transform: uppercase; color: var(--accent);
+    .summary-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
     }
-    #answer-text {
-      font-size: 14px; line-height: 1.7;
+    .summary-label {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.07em;
+      text-transform: uppercase; color: var(--blue);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .summary-tokens {
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+    #summary-text {
+      font-size: 14px;
+      line-height: 1.7;
       color: var(--text);
-      white-space: pre-wrap;
+      white-space: normal;
+    }
+    #summary-text p {
+      margin-bottom: 10px;
+      line-height: 1.65;
+    }
+    #summary-text p:last-child {
+      margin-bottom: 0;
+    }
+    #summary-text strong {
+      color: #f1f5f9;
+      font-weight: 600;
+    }
+    #summary-text ol, #summary-text ul {
+      margin: 8px 0 12px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    #summary-text li {
+      line-height: 1.65;
+      color: var(--text);
+      padding-left: 2px;
+    }
+    .summary-heading {
+      margin: 14px 0 6px 0;
+      font-size: 13px;
+      font-weight: 700;
+      color: #a5b4fc;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.03em;
+    }
+    .summary-heading::before {
+      content: '▸';
+      color: var(--accent);
+      font-size: 12px;
+    }
+    .formula-card {
+      margin: 8px 0 10px 0;
+      padding: 8px 14px;
+      background: rgba(99, 102, 241, 0.08);
+      border: 1px solid rgba(99, 102, 241, 0.22);
+      border-left: 3px solid var(--accent);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 13px;
+      color: #e0e7ff;
+      overflow-x: auto;
+    }
+    .formula-badge {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(99, 102, 241, 0.25);
+      color: #c7d2fe;
+      flex-shrink: 0;
+    }
+    .formula-inline {
+      background: rgba(99, 102, 241, 0.12);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      padding: 1px 5px;
+      border-radius: 4px;
+      color: #c7d2fe;
+      font-size: 12px;
+      font-family: monospace;
+    }
+    .code-pill {
+      background: #1e293b;
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #38bdf8;
+      font-size: 12px;
+      font-family: monospace;
+      border: 1px solid #334155;
+    }
+    .inline-cite-btn {
+      display: inline-flex;
+      align-items: center;
+      padding: 1px 7px;
+      margin: 0 3px;
+      background: #6366f120;
+      color: #818cf8;
+      border: 1px solid #6366f150;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      vertical-align: middle;
+      transition: background-color 0.15s, transform 0.1s;
+    }
+    .inline-cite-btn:hover {
+      background: #6366f13b;
+      transform: translateY(-1px);
+    }
+    .inline-cite-tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 1px 6px;
+      margin: 0 2px;
+      background: rgba(99, 102, 241, 0.15);
+      color: #818cf8;
+      border: 1px solid rgba(99, 102, 241, 0.35);
+      border-radius: 5px;
+      font-size: 11px;
+      font-weight: 600;
     }
 
     /* Complexity badge */
     .badge-row {
       display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+      margin-top: 2px;
     }
     .badge-pill {
       display: inline-flex; align-items: center; gap: 5px;
       padding: 4px 10px; border-radius: 20px;
       font-size: 12px; font-weight: 600;
     }
-    .badge-time  { background: #22c55e18; color: var(--green);  border: 1px solid #22c55e40; }
-    .badge-space { background: #3b82f618; color: var(--blue);   border: 1px solid #3b82f640; }
-    .badge-pattern { background: #a855f718; color: var(--purple); border: 1px solid #a855f740; }
+    .badge-time    { background: #10b98118; color: var(--green);  border: 1px solid #10b98135; }
+    .badge-space   { background: #38bdf818; color: var(--blue);   border: 1px solid #38bdf835; }
+    .badge-pattern { background: #c084fc18; color: var(--purple); border: 1px solid #c084fc35; }
 
-    /* Transcript panel */
-    #transcript-section { display: none; flex-direction: column; gap: 8px; }
-    #transcript-section.visible { display: flex; }
-    .transcript-label {
-      font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+    /* Timestamp Citations (Clean Card List) */
+    #timestamps-section { display: none; flex-direction: column; gap: 10px; }
+    #timestamps-section.visible { display: flex; }
+    .timestamps-label {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.07em;
       text-transform: uppercase; color: var(--text-muted);
       display: flex; align-items: center; gap: 6px;
     }
-    #transcript-panel {
-      background: var(--bg-input);
+    #timestamps-row {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .timestamp-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 12px 16px;
+      background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: var(--radius-sm);
-      padding: 12px 14px;
-      font-size: 13px; line-height: 1.8;
-      color: var(--text-muted);
-      max-height: 180px;
-      overflow-y: auto;
-      scrollbar-width: thin;
-      scrollbar-color: var(--border) transparent;
-    }
-    #transcript-panel span {
-      transition: background-color 0.15s ease, color 0.15s ease;
-      border-radius: 3px;
-      padding: 1px 2px;
       cursor: pointer;
+      font-family: inherit;
+      color: var(--text);
+      text-align: left;
+      transition: border-color 0.2s, background-color 0.15s, transform 0.15s;
     }
-    #transcript-panel span.active {
-      background: var(--highlight);
-      color: var(--amber);
-      border-left: 2px solid var(--highlight-border);
-      padding-left: 6px;
+    .timestamp-card:hover {
+      border-color: var(--accent);
+      background: #1c273e;
+      transform: translateX(2px);
     }
-
-    /* Citations */
-    #citations-section { display: none; flex-direction: column; gap: 8px; }
-    #citations-section.visible { display: flex; }
-    .citations-label {
-      font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
-      text-transform: uppercase; color: var(--text-muted);
+    .timestamp-card.active {
+      border-color: var(--accent);
+      background: #6366f115;
     }
-    #citations-row { display: flex; flex-wrap: wrap; gap: 8px; }
-    .citation-badge {
-      display: flex; flex-direction: column; gap: 3px;
-      padding: 8px 12px;
+    .card-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+    .card-play-icon {
+      width: 28px; height: 28px;
+      border-radius: 50%;
       background: var(--bg-input);
       border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      cursor: pointer; font-family: inherit;
-      text-align: left; color: var(--text);
-      transition: border-color 0.2s, transform 0.15s, box-shadow 0.15s;
-      max-width: 260px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px;
+      color: var(--accent);
+      flex-shrink: 0;
+      transition: background-color 0.2s, color 0.2s;
     }
-    .citation-badge:hover {
+    .timestamp-card:hover .card-play-icon,
+    .timestamp-card.active .card-play-icon {
+      background: var(--accent);
+      color: #fff;
       border-color: var(--accent);
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px var(--accent-glow);
     }
-    .citation-badge.active { border-color: var(--accent); background: #6366f110; }
-    .cite-title { font-size: 12px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .cite-meta { font-size: 11px; color: var(--accent); }
-    .cite-preview { font-size: 11px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-    /* Problem links */
-    #problems-section { display: none; flex-direction: column; gap: 8px; }
-    #problems-section.visible { display: flex; }
+    .card-details {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+    .card-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .card-preview {
+      font-size: 12px;
+      color: var(--text-dim);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .card-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .ts-pill {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--blue);
+      background: #38bdf814;
+      border: 1px solid #38bdf830;
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-variant-numeric: tabular-nums;
+    }
 
     /* Empty state */
     .empty-state {
       display: flex; flex-direction: column; align-items: center; justify-content: center;
-      gap: 12px; padding: 40px 20px; text-align: center;
+      gap: 12px; padding: 48px 20px; text-align: center;
       color: var(--text-dim);
     }
-    .empty-icon { font-size: 40px; }
+    .empty-icon { font-size: 38px; }
     .empty-title { font-size: 15px; font-weight: 600; color: var(--text-muted); }
-    .empty-sub { font-size: 13px; }
-    .suggestion-chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 8px; }
+    .empty-sub { font-size: 13px; color: var(--text-dim); }
+    .suggestion-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 8px; }
     .chip {
-      padding: 6px 12px; border-radius: 20px;
+      padding: 6px 14px; border-radius: 20px;
       background: var(--bg-card); border: 1px solid var(--border);
       font-size: 12px; color: var(--text-muted); cursor: pointer;
       transition: border-color 0.2s, color 0.2s;
@@ -347,8 +506,8 @@
     .refusal-card {
       display: flex; align-items: flex-start; gap: 12px;
       background: #f59e0b0a; border: 1px solid #f59e0b30;
-      border-radius: var(--radius); padding: 14px;
-      animation: fadeIn 0.3s ease;
+      border-radius: var(--radius); padding: 14px 16px;
+      animation: fadeIn 0.25s ease;
     }
     .refusal-icon { font-size: 20px; flex-shrink: 0; }
     .refusal-text { font-size: 13px; color: var(--amber); }
@@ -362,17 +521,14 @@
   <div class="header-brand">
     <div class="header-logo">⚡</div>
     <div>
-      <div class="header-title">DSA TubeRAG</div>
-      <div class="header-sub">Padho with Pratyush · 126 Lectures</div>
+      <div class="header-title">ChronoRag</div>
+      <div class="header-sub">Timestamp-Accurate DSA Video Intelligence · 126 Lectures</div>
     </div>
   </div>
   <div class="header-stats">
     <div class="stat-pill" id="stat-chunks">
       <div class="stat-dot"></div>
-      <span>Loading…</span>
-    </div>
-    <div class="stat-pill">
-      <span>bge-m3 · 1024d · Qdrant</span>
+      <span>126 videos</span>
     </div>
   </div>
 </header>
@@ -397,7 +553,7 @@
     </div>
   </div>
 
-  <!-- RIGHT: Query Panel -->
+  <!-- RIGHT: QA Panel -->
   <div class="query-panel">
 
     <!-- Search bar -->
@@ -420,37 +576,36 @@
       <!-- Loading state -->
       <div id="loading-state">
         <div class="spinner"></div>
-        <div class="loading-text">Searching 4,140 chunks · Generating answer…</div>
+        <div class="loading-text">Retrieving relevant timestamps · Generating summary…</div>
       </div>
 
-      <!-- Answer card -->
-      <div id="answer-card">
-        <div class="answer-label">Answer</div>
-        <div id="answer-text"></div>
+      <!-- Summary card -->
+      <div id="summary-card">
+        <div class="summary-header">
+          <div class="summary-label">
+            <span>⚡</span>
+            <span>Concept Summary</span>
+          </div>
+          <div class="summary-tokens" id="summary-meta"></div>
+        </div>
+        <div id="summary-text"></div>
         <div class="badge-row" id="badge-row"></div>
       </div>
 
-      <!-- Citations -->
-      <div id="citations-section">
-        <div class="citations-label">📍 Sources — click to jump</div>
-        <div id="citations-row"></div>
-      </div>
-
-      <!-- Active transcript -->
-      <div id="transcript-section">
-        <div class="transcript-label">
-          <span>📝</span>
-          <span>Active Transcript</span>
-          <span id="transcript-ts" style="margin-left:auto;color:var(--accent);font-variant-numeric:tabular-nums"></span>
+      <!-- Timestamps -->
+      <div id="timestamps-section">
+        <div class="timestamps-label">
+          <span>📍</span>
+          <span>Relevant Timestamps</span>
         </div>
-        <div id="transcript-panel"></div>
+        <div id="timestamps-row"></div>
       </div>
 
       <!-- Empty state (shown by default) -->
       <div class="empty-state" id="empty-state">
         <div class="empty-icon">🎓</div>
         <div class="empty-title">Ask anything from the DSA playlist</div>
-        <div class="empty-sub">Answers grounded in lecture transcripts · Hinglish · No code</div>
+        <div class="empty-sub">Concise summaries & timestamp deep-links · Hinglish</div>
         <div class="suggestion-chips">
           <div class="chip" onclick="setQuery('BFS kaise kaam karta hai?')">BFS traversal</div>
           <div class="chip" onclick="setQuery('Merge sort ka time complexity kya hai?')">Merge sort complexity</div>
@@ -471,7 +626,6 @@
 const State = {
   player: null,
   currentVideoId: null,
-  activeSegments: [],   // [{start, end, text, el}]
   syncInterval: null,
   activeCitationIdx: -1,
 };
@@ -512,109 +666,66 @@ function loadVideo(videoId, seekSec) {
   }
 }
 
-// ── Transcript Sync ───────────────────────────────────────────────────
+// ── Player Timestamp Sync ─────────────────────────────────────────────
 function startSync() {
   if (State.syncInterval) return;
-  State.syncInterval = setInterval(syncTranscript, 250);
+  State.syncInterval = setInterval(syncTime, 300);
 }
 function stopSync() {
   clearInterval(State.syncInterval);
   State.syncInterval = null;
 }
-
-function syncTranscript() {
-  if (!State.player || !State.activeSegments.length) return;
+function syncTime() {
+  if (!State.player) return;
   const t = State.player.getCurrentTime();
-
-  // Update timestamp display
   document.getElementById('player-ts').textContent = formatTs(t);
-  document.getElementById('transcript-ts').textContent = formatTs(t);
-
-  State.activeSegments.forEach(seg => {
-    const active = t >= seg.start && t <= seg.end;
-    seg.el.classList.toggle('active', active);
-    if (active) seg.el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-  });
 }
 
-function setActiveTranscript(segments) {
-  const panel = document.getElementById('transcript-panel');
-  panel.innerHTML = '';
-  State.activeSegments = [];
-
-  segments.forEach(seg => {
-    const span = document.createElement('span');
-    span.textContent = seg.text + ' ';
-    span.dataset.start = seg.start;
-    span.dataset.end   = seg.end;
-    span.title = formatTs(seg.start);
-    span.onclick = () => {
-      if (State.player) State.player.seekTo(seg.start, true);
-    };
-    panel.appendChild(span);
-    State.activeSegments.push({ ...seg, el: span });
-  });
-
-  document.getElementById('transcript-section').classList.add('visible');
-}
-
-function clearTranscript() {
-  stopSync();
-  State.activeSegments = [];
-  document.getElementById('transcript-panel').innerHTML = '';
-  document.getElementById('transcript-section').classList.remove('visible');
-}
-
-// ── Citation Rendering ────────────────────────────────────────────────
-function renderCitations(citations) {
-  const row = document.getElementById('citations-row');
+// ── Timestamp Citations Rendering ─────────────────────────────────────
+function renderTimestamps(citations) {
+  const row = document.getElementById('timestamps-row');
   row.innerHTML = '';
   if (!citations || !citations.length) {
-    document.getElementById('citations-section').classList.remove('visible');
+    document.getElementById('timestamps-section').classList.remove('visible');
     return;
   }
 
   citations.forEach((c, i) => {
-    const btn = document.createElement('button');
-    btn.className = 'citation-badge';
-    btn.id = `cite-${i}`;
-    btn.innerHTML = `
-      <span class="cite-title" title="${c.title}">${c.title}</span>
-      <span class="cite-meta">📍 ${formatTs(c.start_sec)} · dist ${c.distance.toFixed(3)}</span>
-      <span class="cite-preview">${c.chunk_preview}</span>
+    const card = document.createElement('div');
+    card.className = 'timestamp-card';
+    card.id = `ts-card-${i}`;
+    card.innerHTML = `
+      <div class="card-left">
+        <div class="card-play-icon">▶</div>
+        <div class="card-details">
+          <div class="card-title" title="${c.title}">${c.title}</div>
+          <div class="card-preview">${c.chunk_preview || 'Lecture excerpt'}</div>
+        </div>
+      </div>
+      <div class="card-right">
+        <span class="ts-pill">📍 ${formatTs(c.start_sec)}</span>
+      </div>
     `;
-    btn.onclick = () => handleCitationClick(c, i);
-    row.appendChild(btn);
+    card.onclick = () => handleTimestampClick(c, i);
+    row.appendChild(card);
   });
 
-  document.getElementById('citations-section').classList.add('visible');
+  document.getElementById('timestamps-section').classList.add('visible');
 
-  // Auto-load first citation
-  if (citations.length > 0) handleCitationClick(citations[0], 0);
+  // Auto-load the first timestamp
+  if (citations.length > 0) {
+    handleTimestampClick(citations[0], 0);
+  }
 }
 
-function handleCitationClick(citation, idx) {
-  // Update active state on badges
-  document.querySelectorAll('.citation-badge').forEach((b, i) =>
-    b.classList.toggle('active', i === idx)
-  );
+function handleTimestampClick(citation, idx) {
+  document.querySelectorAll('.timestamp-card').forEach((el, i) => {
+    el.classList.toggle('active', i === idx);
+  });
   State.activeCitationIdx = idx;
 
-  // Update player title
   document.getElementById('player-title').textContent = citation.title;
-
-  // Seek player
   loadVideo(citation.video_id, citation.seek_sec);
-
-  // Update transcript
-  clearTranscript();
-  if (citation.segments && citation.segments.length) {
-    setActiveTranscript(citation.segments);
-    startSync();
-  }
-
-  // Scroll content area to transcript
-  document.getElementById('transcript-section').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 // ── Badge Rendering ───────────────────────────────────────────────────
@@ -629,20 +740,162 @@ function renderBadge(badge) {
   `;
 }
 
-// ── Answer Rendering ──────────────────────────────────────────────────
-function renderAnswer(response) {
-  const card = document.getElementById('answer-card');
-  const textEl = document.getElementById('answer-text');
+// ── Summary Rendering ─────────────────────────────────────────────────
+function formatSummaryHtml(rawText, citations) {
+  if (!rawText) return '';
 
-  // Strip badge line from visible text (it's rendered separately)
-  let answerText = response.answer;
-  if (response.complexity_badge) {
-    const b = response.complexity_badge;
-    const badgeStr = `[Time: ${b.time_complexity} | Space: ${b.space_complexity} | Pattern: ${b.pattern}]`;
-    answerText = answerText.replace(badgeStr, '').trim();
+  // 1. Strip out trailing complexity badge string if present in answer text
+  let cleanText = rawText.replace(/\[Time:\s*[^|]+?\s*\|\s*Space:\s*[^|]+?\s*\|\s*Pattern:\s*[^\]]+?\]/gi, '').trim();
+
+  // Helper to clean LaTeX math expressions
+  function cleanFormula(formula) {
+    return formula
+      .replace(/\\text\{([^}]+)\}/g, '$1')
+      .replace(/\\mathrm\{([^}]+)\}/g, '$1')
+      .replace(/\\mathbf\{([^}]+)\}/g, '$1')
+      .replace(/\\times/g, '×')
+      .replace(/\\le(q)?\b/g, '≤')
+      .replace(/\\ge(q)?\b/g, '≥')
+      .replace(/\\neq\b/g, '≠')
+      .replace(/\\approx\b/g, '≈')
+      .replace(/\\cdot\b/g, '·')
+      .replace(/\\left\s*([(\[{|])/g, '$1')
+      .replace(/\\right\s*([)\]}|])/g, '$1')
+      .replace(/\\([a-zA-Z]+)/g, '')
+      .replace(/[{}]/g, '')
+      .trim();
   }
 
-  textEl.textContent = answerText;
+  // 2. Convert block formulas $$...$$ before HTML escaping
+  const blockFormulas = [];
+  cleanText = cleanText.replace(/\$\$(.*?)\$\$/gs, (match, f) => {
+    const placeholder = `___BLOCK_FORMULA_${blockFormulas.length}___`;
+    blockFormulas.push(cleanFormula(f));
+    return placeholder;
+  });
+
+  // 3. Convert inline formulas $...$
+  const inlineFormulas = [];
+  cleanText = cleanText.replace(/\$([^\$\n]+?)\$/g, (match, f) => {
+    const placeholder = `___INLINE_FORMULA_${inlineFormulas.length}___`;
+    inlineFormulas.push(cleanFormula(f));
+    return placeholder;
+  });
+
+  // 4. Escape basic raw HTML
+  cleanText = cleanText
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  // 5. Restore block formulas as styled formula cards
+  blockFormulas.forEach((formula, idx) => {
+    cleanText = cleanText.replace(
+      `___BLOCK_FORMULA_${idx}___`,
+      `<div class="formula-card"><span class="formula-badge">EQUATION</span><code>${formula}</code></div>`
+    );
+  });
+
+  // 6. Restore inline formulas
+  inlineFormulas.forEach((formula, idx) => {
+    cleanText = cleanText.replace(
+      `___INLINE_FORMULA_${idx}___`,
+      `<code class="formula-inline">${formula}</code>`
+    );
+  });
+
+  // 7. Convert markdown headings (#, ##, ###, ####)
+  cleanText = cleanText.replace(/^[ \t]*#{1,6}\s*(.+?)[ \t]*$/gm, '<h4 class="summary-heading">$1</h4>');
+
+  // 8. Convert bold **text**
+  cleanText = cleanText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+  // 9. Convert inline `code`
+  cleanText = cleanText.replace(/`([^`]+)`/g, '<code class="code-pill">$1</code>');
+
+  // 10. Convert citations like [1], [1, 2], [1, 2, 3] into interactive clickable timestamp buttons
+  cleanText = cleanText.replace(/\[(\d+(?:\s*,\s*\d+)*)\]/g, (match, numbersStr) => {
+    const nums = numbersStr.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
+    return nums.map(p1 => {
+      const idx = p1 - 1;
+      if (citations && citations[idx]) {
+        const cite = citations[idx];
+        return `<button class="inline-cite-btn" onclick="handleTimestampClick(window._lastCitations[${idx}], ${idx})" title="${cite.title} @ ${formatTs(cite.start_sec)}">📍 [${p1}]</button>`;
+      }
+      return `<span class="inline-cite-tag">[${p1}]</span>`;
+    }).join(' ');
+  });
+
+  // 11. Fix floating punctuation before commas/periods (e.g. "📍 [1] ." -> "📍 [1].")
+  cleanText = cleanText.replace(/\s+([.,;:!?])/g, '$1');
+
+  // 12. Line-by-line assembly for lists, headings, formula boxes, and paragraphs
+  const lines = cleanText.split('\n');
+  let html = '';
+  let inUl = false;
+  let inOl = false;
+
+  function closeLists() {
+    if (inUl) { html += '</ul>'; inUl = false; }
+    if (inOl) { html += '</ol>'; inOl = false; }
+  }
+
+  for (let line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      closeLists();
+      continue;
+    }
+
+    if (trimmed.startsWith('<h4 class="summary-heading"')) {
+      closeLists();
+      html += trimmed;
+    } else if (trimmed.startsWith('<div class="formula-card"')) {
+      if (inOl || inUl) {
+        html += `<div style="margin: 4px 0 6px 0;">${trimmed}</div>`;
+      } else {
+        html += trimmed;
+      }
+    } else if (/^[\*\-]\s+(.*)$/.test(trimmed)) {
+      if (inOl) { html += '</ol>'; inOl = false; }
+      if (!inUl) {
+        html += '<ul>';
+        inUl = true;
+      }
+      const itemContent = trimmed.replace(/^[\*\-]\s+/, '');
+      html += `<li>${itemContent}</li>`;
+    } else if (/^\d+\.\s*(.*)$/.test(trimmed)) {
+      if (inUl) { html += '</ul>'; inUl = false; }
+      if (!inOl) {
+        html += '<ol>';
+        inOl = true;
+      }
+      const itemContent = trimmed.replace(/^\d+\.\s*/, '');
+      html += `<li>${itemContent}</li>`;
+    } else {
+      closeLists();
+      html += `<p>${trimmed}</p>`;
+    }
+  }
+  closeLists();
+
+  return html;
+}
+
+function renderSummary(response) {
+  const card = document.getElementById('summary-card');
+  const textEl = document.getElementById('summary-text');
+  const metaEl = document.getElementById('summary-meta');
+
+  window._lastCitations = response.citations || [];
+
+  textEl.innerHTML = formatSummaryHtml(response.answer, response.citations);
+  if (response.tokens_used) {
+    metaEl.textContent = `${response.tokens_used} tokens · ${response.latency_ms}ms`;
+  } else {
+    metaEl.textContent = `${response.latency_ms}ms`;
+  }
+
   renderBadge(response.complexity_badge);
   card.classList.add('visible');
 }
@@ -685,8 +938,8 @@ async function handleAsk() {
 
   // Reset UI
   document.getElementById('empty-state').style.display = 'none';
-  document.getElementById('answer-card').classList.remove('visible');
-  document.getElementById('citations-section').classList.remove('visible');
+  document.getElementById('summary-card').classList.remove('visible');
+  document.getElementById('timestamps-section').classList.remove('visible');
   document.getElementById('loading-state').classList.add('visible');
   document.getElementById('ask-btn').disabled = true;
   document.querySelectorAll('.refusal-card').forEach(el => el.remove());
@@ -707,13 +960,13 @@ async function handleAsk() {
     if (data.is_refused) {
       renderRefusal(data);
     } else {
-      renderAnswer(data);
-      renderCitations(data.citations);
+      renderSummary(data);
+      renderTimestamps(data.citations);
     }
   } catch (err) {
     const div = document.createElement('div');
     div.className = 'refusal-card';
-    div.innerHTML = `<div class="refusal-icon">⚠️</div><div><div class="refusal-text">Error: ${err.message}</div><div class="refusal-meta">Make sure the API server is running: uv run uvicorn api.main:app --reload</div></div>`;
+    div.innerHTML = `<div class="refusal-icon">⚠️</div><div><div class="refusal-text">Error: ${err.message}</div><div class="refusal-meta">Server check: uv run uvicorn api.main:app --reload</div></div>`;
     document.getElementById('content-area').insertBefore(div, document.getElementById('content-area').firstChild);
   } finally {
     document.getElementById('loading-state').classList.remove('visible');
@@ -744,7 +997,5 @@ document.getElementById('query-input').addEventListener('keydown', e => {
 // Load stats on boot
 loadStats();
 </script>
-
-<!-- YouTube IFrame API is loaded above via script tag -->
 </body>
 </html>

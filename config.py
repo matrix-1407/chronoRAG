@@ -27,7 +27,7 @@ OPENROUTER_API_KEY: str | None = os.environ.get("OPENROUTER_API_KEY") or None
 COLLECTION_NAME: str = os.environ.get("YTRAG_COLLECTION", "dsa_lectures_1024")
 EMBED_MODEL: str = os.environ.get("YTRAG_EMBED_MODEL", "BAAI/bge-m3")
 EMBED_DIM: int = 1024  # bge-m3 fixed output dimension
-GEMINI_MODEL: str = os.environ.get("YTRAG_GEMINI_MODEL", "gemini-2.5-flash")
+GEMINI_MODEL: str = os.environ.get("YTRAG_GEMINI_MODEL", "gemini-3.5-flash")
 
 # ── Chunking ───────────────────────────────────────────────────────────────
 CHUNK_DURATION: int = int(os.environ.get("YTRAG_CHUNK_SECONDS", 75))
@@ -43,7 +43,7 @@ TOP_K: int = 5
 TOP_K_DENSE: int = 10
 
 # ── Generation ─────────────────────────────────────────────────────────────
-MAX_OUTPUT_TOKENS: int = int(os.environ.get("YTRAG_MAX_OUTPUT_TOKENS", 350))
+MAX_OUTPUT_TOKENS: int = int(os.environ.get("YTRAG_MAX_OUTPUT_TOKENS", 300))
 TEMPERATURE: float = 0.1
 TOP_P: float = 0.8
 TOP_K_GEMINI: int = 20
