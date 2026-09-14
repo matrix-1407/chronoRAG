@@ -173,7 +173,8 @@ def answer(
         best_distance = float(retrieval_distance)
     else:
         top_score = float(points[0].score)
-        best_distance = max(0.0, 1.0 - top_score) if top_score > 0.05 else 0.0
+        # If top_score is tiny (<= 0.05, typical of RRF or non-match), distance is 1.0 (unmatched)
+        best_distance = max(0.0, 1.0 - top_score) if top_score > 0.05 else 1.0
 
     if best_distance > config.MAX_DISTANCE:
         return RAGResponse(
@@ -192,27 +193,59 @@ def answer(
         f"Question: {query_processed or query}"
     )
 
-    # ── Call Gemini ────────────────────────────────────────────────────────
+    # ── Call Gemini with Retry & Fallback ──────────────────────────────────
     client = _get_gemini_client()
 
-    response = client.models.generate_content(
-        model=config.GEMINI_MODEL,
-        contents=[
-            genai_types.Content(
-                role="user",
-                parts=[genai_types.Part(text=user_turn)],
+    max_retries = 3
+    last_err: Exception | None = None
+    response = None
+
+    for attempt in range(max_retries):
+        try:
+            response = client.models.generate_content(
+                model=config.GEMINI_MODEL,
+                contents=[
+                    genai_types.Content(
+                        role="user",
+                        parts=[genai_types.Part(text=user_turn)],
+                    )
+                ],
+                config=genai_types.GenerateContentConfig(
+                    system_instruction=SYSTEM_PROMPT,
+                    temperature=config.TEMPERATURE,
+                    max_output_tokens=config.MAX_OUTPUT_TOKENS,
+                    top_p=config.TOP_P,
+                    top_k=config.TOP_K_GEMINI,
+                    candidate_count=1,
+                    thinking_config=genai_types.ThinkingConfig(thinking_budget=0),
+                ),
             )
-        ],
-        config=genai_types.GenerateContentConfig(
-            system_instruction=SYSTEM_PROMPT,
-            temperature=config.TEMPERATURE,
-            max_output_tokens=config.MAX_OUTPUT_TOKENS,
-            top_p=config.TOP_P,
-            top_k=config.TOP_K_GEMINI,
-            candidate_count=1,
-            thinking_config=genai_types.ThinkingConfig(thinking_budget=0),
-        ),
-    )
+            break
+        except Exception as exc:
+            last_err = exc
+            err_msg = str(exc)
+            # Retry on transient server errors (503 / 429)
+            if ("503" in err_msg or "UNAVAILABLE" in err_msg or "429" in err_msg or "RESOURCE_EXHAUSTED" in err_msg) and attempt < max_retries - 1:
+                wait_sec = 2 ** attempt
+                print(f"[answer] Gemini transient error ({exc}), retrying in {wait_sec}s (attempt {attempt + 1}/{max_retries}) …")
+                time.sleep(wait_sec)
+                continue
+            break
+
+    if response is None:
+        # Fallback gracefully instead of crashing with unhandled ServerError
+        err_detail = "Server temporarily busy. Please try again in a few seconds."
+        print(f"[answer] Gemini call failed after retries: {last_err}")
+        return RAGResponse(
+            answer=f"⚠️ {err_detail}",
+            complexity_badge=None,
+            citations=[],
+            retrieval_distance=round(best_distance, 4),
+            tokens_used=0,
+            is_refused=False,
+            query_processed=query_processed or query,
+            latency_ms=_elapsed_ms(),
+        )
 
     answer_text: str = response.text or REFUSAL_MSG
 

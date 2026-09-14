@@ -39,7 +39,7 @@ MIN_CHUNK_WORDS: int = 20   # skip near-silent windows
 UNIQUE_RATIO_THRESHOLD: float = 0.35   # Whisper repetition filter
 
 # ── Retrieval (Hybrid & RRF) ────────────────────────────────────────────────
-MAX_DISTANCE: float = float(os.environ.get("YTRAG_MAX_DISTANCE", 0.5))
+MAX_DISTANCE: float = float(os.environ.get("YTRAG_MAX_DISTANCE", 0.46))
 TOP_K: int = 5
 TOP_K_DENSE: int = int(os.environ.get("YTRAG_TOP_K_DENSE", 10))
 TOP_K_SPARSE: int = int(os.environ.get("YTRAG_TOP_K_SPARSE", 10))
