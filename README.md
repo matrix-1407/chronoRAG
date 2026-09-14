@@ -48,51 +48,35 @@ The following diagram illustrates the end-to-end architecture across client inte
 
 ```mermaid
 flowchart TD
-    subgraph Clients["Client Interfaces"]
-        WebUI["Web Interface (Vanilla JS + Glassmorphism UI)"]
-        CLI["CLI Harness (Typer + Rich)"]
+    subgraph Clients["Client Applications"]
+        WebUI["Web UI (Vanilla JS & YouTube Player)"]
+        CLI["CLI Tool (Typer & Rich)"]
     end
 
-    subgraph Service["Backend API & Application Layer (FastAPI)"]
-        APIRoutes["FastAPI REST Endpoints (/api/ask, /api/stats)"]
-        Preproc["DSA Query Preprocessor (Acronyms + LeetCode)"]
-        HybridEngine["HybridEmbedder (Singleton)"]
-        DenseModel["Dense: BAAI/bge-m3 (1024-dim)"]
-        SparseModel["Sparse: FastEmbed Qdrant/bm25"]
-        Guard["Out-of-Syllabus Distance Guard (Cutoff = 0.5)"]
-        AnswerSynth["Synthesis Engine (Gemini 3.5 Flash)"]
+    subgraph Service["Backend Services (FastAPI)"]
+        API["FastAPI REST API"]
+        Pre["Query Preprocessor (DSA Acronyms)"]
+        Embed["HybridEmbedder (Dense + Sparse BM25)"]
+        Guard{"Refusal Guard (Distance Cutoff = 0.5)"}
+        Synth["Synthesis Engine (Gemini 3.5 Flash)"]
     end
 
-    subgraph Storage["Vector Database (Qdrant Cloud)"]
-        Qdrant[("Qdrant Cluster (dsa_lectures_1024)
-        - Named Vector 'dense' (Cosine)
-        - Named Vector 'sparse' (BM25)")]
+    subgraph Storage["Vector Database"]
+        Qdrant[("Qdrant Cloud (dsa_lectures_1024)")]
     end
 
-    subgraph ExtModels["External Intelligence & Media"]
-        GeminiAPI["Google Gemini API (Thinking Budget = 0)"]
-        YTPlayer["YouTube IFrame Embedded Player"]
-    end
-
-    WebUI -->|HTTP POST /api/ask| APIRoutes
-    CLI -->|CLI Command tuberag find/ask| Preproc
-    APIRoutes --> Preproc
-    Preproc --> HybridEngine
-    HybridEngine --> DenseModel
-    HybridEngine --> SparseModel
-
-    DenseModel -->|Dense Vector| Qdrant
-    SparseModel -->|Sparse Vector| Qdrant
-
-    Qdrant -->|Prefetch & RRF Ranked Points| Guard
-    Guard -->|Distance > 0.5 (Refuse)| APIRoutes
-    Guard -->|Distance <= 0.5 (Proceed)| AnswerSynth
-
-    AnswerSynth -->|Prompt + Formatted Context| GeminiAPI
-    GeminiAPI -->|Summary + Badge + Citations| AnswerSynth
-    AnswerSynth --> APIRoutes
-    APIRoutes -->|JSON Response| WebUI
-    WebUI -->|Seek Video to start_sec - 5s| YTPlayer
+    WebUI -->|"POST /api/ask"| API
+    CLI -->|"tuberag find / ask"| Pre
+    API --> Pre
+    Pre --> Embed
+    Embed -->|"Dense & Sparse Vectors"| Qdrant
+    Qdrant -->|"Prefetch & RRF Results"| Guard
+    Guard -->|"Distance > 0.5: Refuse (0 tokens)"| API
+    Guard -->|"Distance <= 0.5: Context Chunks"| Synth
+    Synth -->|"Gemini Prompt & Context"| GeminiAPI["Google Gemini API"]
+    GeminiAPI -->|"Concept Summary + Badge"| Synth
+    Synth --> API
+    API -->|"JSON with Video Timestamp"| WebUI
 ```
 
 ---
@@ -102,32 +86,16 @@ flowchart TD
 When a user submits a question, the query passes through normalization, dual-vector generation, fused ranking, threshold validation, and structured answer synthesis:
 
 ```mermaid
-sequenceDiagram
-    autonumber
-    actor User
-    participant UI as Web UI / CLI
-    participant Pre as Preprocessor
-    participant Emb as HybridEmbedder
-    participant Qdr as Qdrant Cloud
-    participant Guard as Refusal Guard
-    participant LLM as Gemini Flash
-
-    User->>UI: Submit query ("how does LCS work in lc 1143?")
-    UI->>Pre: preprocess_query()
-    Pre-->>UI: "how does LCS Longest Common Subsequence work in LeetCode 1143?"
-    UI->>Emb: embed_query()
-    Emb-->>UI: dense_vec (1024-dim), sparse_vec (BM25)
-    UI->>Qdr: query_points(Prefetch[dense, sparse], Fusion.RRF)
-    Qdr-->>UI: Top-K Ranked ScoredPoints + Best Dense Distance
-    UI->>Guard: Evaluate Best Distance <= MAX_DISTANCE (0.5)
-    alt Distance > 0.5 (Out of Domain)
-        Guard-->>UI: Refusal: "Ye topic in lectures me cover nahi hua." (0 tokens)
-        UI-->>User: Display Refusal Banner
-    else Distance <= 0.5 (In Syllabus)
-        Guard->>LLM: generate_content(Transcripts Context, User Query)
-        LLM-->>UI: Markdown Answer + [Time/Space Badge] + [N] Citations
-        UI-->>User: Render Concept Card, Interactive Timestamp Pins, & Play Video
-    end
+flowchart TD
+    Q["User Query<br/>(e.g., 'how does LCS work in lc 1143?')"] --> Norm["1. Query Preprocessor<br/>Expands DSA Acronyms & LeetCode references"]
+    Norm --> Embed["2. Dual Embeddings<br/>Dense (bge-m3) + Sparse (FastEmbed BM25)"]
+    Embed --> RRF["3. Qdrant Hybrid Search<br/>Prefetch candidates & Reciprocal Rank Fusion (RRF)"]
+    RRF --> Guard{"4. Cosine Distance Guard<br/>Is best distance <= 0.5?"}
+    
+    Guard -->|"No: Out of Syllabus"| Refuse["Instant Refusal<br/>'Ye topic in lectures me cover nahi hua.'<br/>(0 LLM tokens spent)"]
+    Guard -->|"Yes: In Syllabus"| LLM["5. Gemini 3.5 Flash Synthesis<br/>thinking_budget=0 | Concise 100-140 words"]
+    
+    LLM --> Out["6. Structured Response<br/>Concept Summary + Complexity Badge + Interactive Video Pins"]
 ```
 
 ---
@@ -138,28 +106,12 @@ Raw lecture transcripts are parsed, sanitized against Whisper repetition artifac
 
 ```mermaid
 flowchart LR
-    subgraph Ingestion["Transcript Ingestion"]
-        JSONs["126 Transcripts (*.json)"] --> Chunker["Time-Domain Chunker (chunk.py)"]
-        Chunker --> Window["75s Greedy Time-Windows
-        (15s Overlap / 5s Rewind)"]
-        Window --> LoopFilter{"Whisper Hallucination
-        Filter (unique_ratio >= 0.35)"}
-        LoopFilter -- Pass --> ChunkObj["4,140 Unique Chunks
-        (Deterministic uuid5 IDs)"]
-    end
-
-    subgraph Embedding["Vector Generation"]
-        ChunkObj --> DenseBatch["Dense Embedding
-        BAAI/bge-m3 (1024-dim)"]
-        ChunkObj --> SparseBatch["Sparse BM25 Embedding
-        FastEmbed Qdrant/bm25"]
-    end
-
-    subgraph Upsert["Qdrant Cloud"]
-        DenseBatch --> UpsertCall["Idempotent Batch Upsert (100 pts/batch)"]
-        SparseBatch --> UpsertCall
-        UpsertCall --> QdrantIndex[("dsa_lectures_1024 Collection")]
-    end
+    JSONs["126 Transcript Files (*.json)"] --> Chunker["Time-Domain Chunker (chunk.py)"]
+    Chunker --> Window["75s Greedy Windows<br/>(15s Overlap / 5s Rewind)"]
+    Window --> LoopFilter{"Whisper Repetition Filter<br/>unique_ratio >= 0.35"}
+    LoopFilter -->|"Pass"| ChunkObj["4,140 Chunks<br/>Deterministic uuid5 IDs"]
+    ChunkObj --> Embeddings["Hybrid Embeddings<br/>Dense bge-m3 + Sparse BM25"]
+    Embeddings --> QdrantDB[("Qdrant Cloud<br/>dsa_lectures_1024")]
 ```
 
 ---
