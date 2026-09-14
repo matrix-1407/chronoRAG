@@ -300,7 +300,8 @@ def search_hybrid(
         with_vectors=False,
     )
 
-    # Compute best dense distance for distance threshold guardrail
+    # Compute effective hybrid distance for distance threshold guardrail:
+    # 1. Base distance from top dense cosine match
     best_distance = 1.0
     try:
         dense_top = client.query_points(
@@ -313,6 +314,22 @@ def search_hybrid(
         ).points
         if dense_top:
             best_distance = max(0.0, 1.0 - float(dense_top[0].score))
+    except Exception:
+        pass
+
+    # 2. Check sparse BM25: if there is a strong keyword hit (score >= 9.0) in the corpus,
+    # grant a distance bonus (-0.025) for Hinglish DSA phrasing (e.g. 'LCS table initialization kaise karein')
+    try:
+        sparse_top = client.query_points(
+            collection_name=config.COLLECTION_NAME,
+            query=query_sparse,
+            using="sparse",
+            limit=1,
+            with_payload=False,
+            with_vectors=False,
+        ).points
+        if sparse_top and float(sparse_top[0].score) >= 9.0:
+            best_distance = max(0.0, best_distance - 0.025)
     except Exception:
         pass
 
