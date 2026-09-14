@@ -115,6 +115,7 @@ def _point_to_citation(pt: ScoredPoint, fallback_distance: float = 0.0) -> Citat
         video_id=p.get("video_id", ""),
         title=p.get("title", ""),
         start_sec=float(p.get("start_sec", 0)),
+        end_sec=float(p.get("end_sec", 0)),
         seek_sec=float(p.get("seek_sec", 0)),
         youtube_url=p.get("youtube_url", ""),
         chunk_preview=preview,

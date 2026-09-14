@@ -1,1001 +1,710 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ChronoRag — Timestamp-Accurate DSA Video Intelligence</title>
-  <meta name="description" content="Timestamp-accurate RAG system for DSA video lectures. Ask DSA questions and jump directly to the exact lecture timestamp." />
+  <title>ChronoRag — Interactive DSA Video Intelligence</title>
+  <meta name="description" content="Timestamp-accurate RAG system for DSA video lectures with real-time synchronized transcript tracking." />
+  
+  <!-- High-resolution SVG Favicon -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><linearGradient id='g' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='%236366f1'/><stop offset='100%' stop-color='%23a855f7'/></linearGradient></defs><rect width='32' height='32' rx='8' fill='url(%23g)'/><path d='M18 5L9 17h6l-2 10 9-12h-6l2-10z' fill='white'/></svg>" />
+
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            slate: {
+              850: '#151f32',
+              900: '#0f172a',
+              950: '#080d1a',
+            },
+          },
+        },
+      },
+    }
+  </script>
   <style>
-    /* ── Design Tokens ───────────────────────────────────────────── */
-    :root {
-      --bg-base:     #090d16;
-      --bg-panel:    #0f172a;
-      --bg-card:     #162033;
-      --bg-input:    #1c283f;
-      --border:      #26354f;
-      --accent:      #6366f1;
-      --accent-glow: #6366f133;
-      --accent-2:    #8b5cf6;
-      --green:       #10b981;
-      --blue:        #38bdf8;
-      --purple:      #c084fc;
-      --amber:       #f59e0b;
-      --text:        #f8fafc;
-      --text-muted:  #94a3b8;
-      --text-dim:    #64748b;
-      --radius:      12px;
-      --radius-sm:   8px;
+    /* Custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(51, 65, 85, 0.8);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(99, 102, 241, 0.6);
     }
 
-    /* ── Reset ───────────────────────────────────────────────────── */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { height: 100%; overflow: hidden; }
-    body {
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      background: var(--bg-base);
-      color: var(--text);
-      display: flex;
-      flex-direction: column;
+    /* Active sentence highlight transition */
+    .transcript-line {
+      transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
     }
 
-    /* ── Header ──────────────────────────────────────────────────── */
-    header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 24px;
-      background: var(--bg-panel);
-      border-bottom: 1px solid var(--border);
-      flex-shrink: 0;
-      z-index: 10;
+    /* Citation badge pulse */
+    .cite-btn:hover {
+      box-shadow: 0 0 12px rgba(99, 102, 241, 0.45);
     }
-    .header-brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .header-logo {
-      width: 34px; height: 34px;
-      background: linear-gradient(135deg, var(--accent), var(--accent-2));
-      border-radius: 9px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 17px;
-      box-shadow: 0 2px 10px var(--accent-glow);
-    }
-    .header-title {
-      font-size: 17px; font-weight: 700;
-      letter-spacing: -0.01em;
-      background: linear-gradient(135deg, #ffffff 40%, #c7d2fe);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    }
-    .header-sub { font-size: 12px; color: var(--text-muted); }
-    .header-stats {
-      display: flex; align-items: center; gap: 12px;
-      font-size: 12px; color: var(--text-muted);
-    }
-    .stat-pill {
-      background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: 20px; padding: 5px 12px;
-      display: flex; align-items: center; gap: 6px;
-    }
-    .stat-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
-
-    /* ── Main Split Layout ───────────────────────────────────────── */
-    .main {
-      display: flex;
-      flex: 1;
-      overflow: hidden;
-    }
-
-    /* ── LEFT — Video Player Panel ───────────────────────────────── */
-    .player-panel {
-      width: 50%;
-      display: flex;
-      flex-direction: column;
-      background: #000;
-      border-right: 1px solid var(--border);
-      flex-shrink: 0;
-    }
-    .player-wrapper {
-      position: relative;
-      width: 100%;
-      padding-top: 56.25%; /* 16:9 */
-      background: #000;
-    }
-    #player {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-    }
-    .player-info {
-      padding: 14px 18px;
-      background: var(--bg-panel);
-      border-top: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      flex-shrink: 0;
-    }
-    .player-meta { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-    .player-title {
-      font-size: 13px; font-weight: 600; color: var(--text);
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-    .player-timestamp {
-      font-size: 11px; color: var(--text-muted);
-      font-variant-numeric: tabular-nums;
-    }
-    .live-badge {
-      display: flex; align-items: center; gap: 6px;
-      font-size: 11px; font-weight: 600; color: var(--amber);
-      background: #f59e0b15; border: 1px solid #f59e0b35;
-      border-radius: 20px; padding: 3px 10px;
-      flex-shrink: 0;
-    }
-    .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--amber); }
-
-    /* ── RIGHT — Content & QA Panel ──────────────────────────────── */
-    .query-panel {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      background: var(--bg-base);
-      overflow: hidden;
-    }
-
-    /* Search bar */
-    .search-section {
-      padding: 16px 20px;
-      background: var(--bg-panel);
-      border-bottom: 1px solid var(--border);
-      flex-shrink: 0;
-    }
-    .search-row {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
-    #query-input {
-      flex: 1;
-      background: var(--bg-input);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 11px 16px;
-      font-size: 14px;
-      font-family: inherit;
-      color: var(--text);
-      outline: none;
-      transition: border-color 0.2s, box-shadow 0.2s;
-    }
-    #query-input::placeholder { color: var(--text-dim); }
-    #query-input:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px var(--accent-glow);
-    }
-    #ask-btn {
-      background: linear-gradient(135deg, var(--accent), var(--accent-2));
-      border: none; border-radius: var(--radius-sm);
-      padding: 11px 22px;
-      font-size: 14px; font-weight: 600; font-family: inherit;
-      color: #fff; cursor: pointer;
-      transition: transform 0.15s, box-shadow 0.15s;
-      white-space: nowrap;
-    }
-    #ask-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 14px var(--accent-glow); }
-    #ask-btn:active { transform: translateY(0); }
-    #ask-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-
-    /* Scrollable content area */
-    .content-area {
-      flex: 1;
-      overflow-y: auto;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      scrollbar-width: thin;
-      scrollbar-color: var(--border) transparent;
-    }
-    .content-area::-webkit-scrollbar { width: 5px; }
-    .content-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-
-    /* Loading state */
-    #loading-state {
-      display: none;
-      align-items: center;
-      gap: 12px;
-      padding: 16px;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-    }
-    #loading-state.visible { display: flex; }
-    .spinner {
-      width: 20px; height: 20px;
-      border: 2px solid var(--border);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      flex-shrink: 0;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .loading-text { font-size: 13px; color: var(--text-muted); }
-
-    /* Summary Card */
-    #summary-card {
-      display: none;
-      flex-direction: column;
-      gap: 12px;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 18px 20px;
-      animation: fadeIn 0.25s ease;
-    }
-    #summary-card.visible { display: flex; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
-
-    .summary-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-    }
-    .summary-label {
-      font-size: 11px; font-weight: 700; letter-spacing: 0.07em;
-      text-transform: uppercase; color: var(--blue);
-      display: flex; align-items: center; gap: 6px;
-    }
-    .summary-tokens {
-      font-size: 11px;
-      color: var(--text-dim);
-    }
-    #summary-text {
-      font-size: 14px;
-      line-height: 1.7;
-      color: var(--text);
-      white-space: normal;
-    }
-    #summary-text p {
-      margin-bottom: 10px;
-      line-height: 1.65;
-    }
-    #summary-text p:last-child {
-      margin-bottom: 0;
-    }
-    #summary-text strong {
-      color: #f1f5f9;
-      font-weight: 600;
-    }
-    #summary-text ol, #summary-text ul {
-      margin: 8px 0 12px 22px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    #summary-text li {
-      line-height: 1.65;
-      color: var(--text);
-      padding-left: 2px;
-    }
-    .summary-heading {
-      margin: 14px 0 6px 0;
-      font-size: 13px;
-      font-weight: 700;
-      color: #a5b4fc;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      letter-spacing: 0.03em;
-    }
-    .summary-heading::before {
-      content: '▸';
-      color: var(--accent);
-      font-size: 12px;
-    }
-    .formula-card {
-      margin: 8px 0 10px 0;
-      padding: 8px 14px;
-      background: rgba(99, 102, 241, 0.08);
-      border: 1px solid rgba(99, 102, 241, 0.22);
-      border-left: 3px solid var(--accent);
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      font-size: 13px;
-      color: #e0e7ff;
-      overflow-x: auto;
-    }
-    .formula-badge {
-      font-size: 9px;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      padding: 2px 6px;
-      border-radius: 4px;
-      background: rgba(99, 102, 241, 0.25);
-      color: #c7d2fe;
-      flex-shrink: 0;
-    }
-    .formula-inline {
-      background: rgba(99, 102, 241, 0.12);
-      border: 1px solid rgba(99, 102, 241, 0.25);
-      padding: 1px 5px;
-      border-radius: 4px;
-      color: #c7d2fe;
-      font-size: 12px;
-      font-family: monospace;
-    }
-    .code-pill {
-      background: #1e293b;
-      padding: 2px 6px;
-      border-radius: 4px;
-      color: #38bdf8;
-      font-size: 12px;
-      font-family: monospace;
-      border: 1px solid #334155;
-    }
-    .inline-cite-btn {
-      display: inline-flex;
-      align-items: center;
-      padding: 1px 7px;
-      margin: 0 3px;
-      background: #6366f120;
-      color: #818cf8;
-      border: 1px solid #6366f150;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      vertical-align: middle;
-      transition: background-color 0.15s, transform 0.1s;
-    }
-    .inline-cite-btn:hover {
-      background: #6366f13b;
-      transform: translateY(-1px);
-    }
-    .inline-cite-tag {
-      display: inline-flex;
-      align-items: center;
-      padding: 1px 6px;
-      margin: 0 2px;
-      background: rgba(99, 102, 241, 0.15);
-      color: #818cf8;
-      border: 1px solid rgba(99, 102, 241, 0.35);
-      border-radius: 5px;
-      font-size: 11px;
-      font-weight: 600;
-    }
-
-    /* Complexity badge */
-    .badge-row {
-      display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
-      margin-top: 2px;
-    }
-    .badge-pill {
-      display: inline-flex; align-items: center; gap: 5px;
-      padding: 4px 10px; border-radius: 20px;
-      font-size: 12px; font-weight: 600;
-    }
-    .badge-time    { background: #10b98118; color: var(--green);  border: 1px solid #10b98135; }
-    .badge-space   { background: #38bdf818; color: var(--blue);   border: 1px solid #38bdf835; }
-    .badge-pattern { background: #c084fc18; color: var(--purple); border: 1px solid #c084fc35; }
-
-    /* Timestamp Citations (Clean Card List) */
-    #timestamps-section { display: none; flex-direction: column; gap: 10px; }
-    #timestamps-section.visible { display: flex; }
-    .timestamps-label {
-      font-size: 11px; font-weight: 700; letter-spacing: 0.07em;
-      text-transform: uppercase; color: var(--text-muted);
-      display: flex; align-items: center; gap: 6px;
-    }
-    #timestamps-row {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .timestamp-card {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 14px;
-      padding: 12px 16px;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-      font-family: inherit;
-      color: var(--text);
-      text-align: left;
-      transition: border-color 0.2s, background-color 0.15s, transform 0.15s;
-    }
-    .timestamp-card:hover {
-      border-color: var(--accent);
-      background: #1c273e;
-      transform: translateX(2px);
-    }
-    .timestamp-card.active {
-      border-color: var(--accent);
-      background: #6366f115;
-    }
-    .card-left {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      min-width: 0;
-    }
-    .card-play-icon {
-      width: 28px; height: 28px;
-      border-radius: 50%;
-      background: var(--bg-input);
-      border: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 12px;
-      color: var(--accent);
-      flex-shrink: 0;
-      transition: background-color 0.2s, color 0.2s;
-    }
-    .timestamp-card:hover .card-play-icon,
-    .timestamp-card.active .card-play-icon {
-      background: var(--accent);
-      color: #fff;
-      border-color: var(--accent);
-    }
-    .card-details {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      min-width: 0;
-    }
-    .card-title {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .card-preview {
-      font-size: 12px;
-      color: var(--text-dim);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .card-right {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-shrink: 0;
-    }
-    .ts-pill {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--blue);
-      background: #38bdf814;
-      border: 1px solid #38bdf830;
-      border-radius: 6px;
-      padding: 4px 10px;
-      font-variant-numeric: tabular-nums;
-    }
-
-    /* Empty state */
-    .empty-state {
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      gap: 12px; padding: 48px 20px; text-align: center;
-      color: var(--text-dim);
-    }
-    .empty-icon { font-size: 38px; }
-    .empty-title { font-size: 15px; font-weight: 600; color: var(--text-muted); }
-    .empty-sub { font-size: 13px; color: var(--text-dim); }
-    .suggestion-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 8px; }
-    .chip {
-      padding: 6px 14px; border-radius: 20px;
-      background: var(--bg-card); border: 1px solid var(--border);
-      font-size: 12px; color: var(--text-muted); cursor: pointer;
-      transition: border-color 0.2s, color 0.2s;
-    }
-    .chip:hover { border-color: var(--accent); color: var(--accent); }
-
-    /* Refusal state */
-    .refusal-card {
-      display: flex; align-items: flex-start; gap: 12px;
-      background: #f59e0b0a; border: 1px solid #f59e0b30;
-      border-radius: var(--radius); padding: 14px 16px;
-      animation: fadeIn 0.25s ease;
-    }
-    .refusal-icon { font-size: 20px; flex-shrink: 0; }
-    .refusal-text { font-size: 13px; color: var(--amber); }
-    .refusal-meta { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
   </style>
 </head>
-<body>
+<body class="bg-slate-950 text-slate-100 font-sans h-screen flex flex-col overflow-hidden antialiased selection:bg-indigo-500/30 selection:text-indigo-200">
 
-<!-- ── Header ──────────────────────────────────────────────────────── -->
-<header>
-  <div class="header-brand">
-    <div class="header-logo">⚡</div>
-    <div>
-      <div class="header-title">ChronoRag</div>
-      <div class="header-sub">Timestamp-Accurate DSA Video Intelligence · 126 Lectures</div>
-    </div>
-  </div>
-  <div class="header-stats">
-    <div class="stat-pill" id="stat-chunks">
-      <div class="stat-dot"></div>
-      <span>126 videos</span>
-    </div>
-  </div>
-</header>
-
-<!-- ── Main Split ───────────────────────────────────────────────────── -->
-<div class="main">
-
-  <!-- LEFT: YouTube Player -->
-  <div class="player-panel">
-    <div class="player-wrapper">
-      <div id="player"></div>
-    </div>
-    <div class="player-info">
-      <div class="player-meta">
-        <div class="player-title" id="player-title">Select a lecture below ↓</div>
-        <div class="player-timestamp" id="player-ts">00:00:00</div>
-      </div>
-      <div class="live-badge" id="live-badge" style="display:none">
-        <div class="live-dot"></div>
-        LIVE
-      </div>
-    </div>
-  </div>
-
-  <!-- RIGHT: QA Panel -->
-  <div class="query-panel">
-
-    <!-- Search bar -->
-    <div class="search-section">
-      <div class="search-row">
-        <input
-          type="text"
-          id="query-input"
-          placeholder="DSA question likhein… e.g. BFS kaise kaam karta hai?"
-          autocomplete="off"
-          spellcheck="false"
-        />
-        <button id="ask-btn" onclick="handleAsk()">Ask ⚡</button>
-      </div>
-    </div>
-
-    <!-- Scrollable content -->
-    <div class="content-area" id="content-area">
-
-      <!-- Loading state -->
-      <div id="loading-state">
-        <div class="spinner"></div>
-        <div class="loading-text">Retrieving relevant timestamps · Generating summary…</div>
-      </div>
-
-      <!-- Summary card -->
-      <div id="summary-card">
-        <div class="summary-header">
-          <div class="summary-label">
-            <span>⚡</span>
-            <span>Concept Summary</span>
+  <!-- ── 1. Top Bar / Header ─────────────────────────────────────────── -->
+  <header class="bg-slate-900/90 backdrop-blur border-b border-slate-800 px-6 py-3 flex-shrink-0 z-30">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
+      <!-- Brand -->
+      <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/25 ring-1 ring-white/10 text-white">
+            <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+            </svg>
           </div>
-          <div class="summary-tokens" id="summary-meta"></div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-base tracking-tight text-white">ChronoRag</span>
+            </div>
+            <p class="text-xs text-slate-400 hidden sm:block">Timestamp-Accurate DSA Video Intelligence · 126 Lectures</p>
+          </div>
         </div>
-        <div id="summary-text"></div>
-        <div class="badge-row" id="badge-row"></div>
-      </div>
 
-      <!-- Timestamps -->
-      <div id="timestamps-section">
-        <div class="timestamps-label">
-          <span>📍</span>
-          <span>Relevant Timestamps</span>
-        </div>
-        <div id="timestamps-row"></div>
-      </div>
-
-      <!-- Empty state (shown by default) -->
-      <div class="empty-state" id="empty-state">
-        <div class="empty-icon">🎓</div>
-        <div class="empty-title">Ask anything from the DSA playlist</div>
-        <div class="empty-sub">Concise summaries & timestamp deep-links · Hinglish</div>
-        <div class="suggestion-chips">
-          <div class="chip" onclick="setQuery('BFS kaise kaam karta hai?')">BFS traversal</div>
-          <div class="chip" onclick="setQuery('Merge sort ka time complexity kya hai?')">Merge sort complexity</div>
-          <div class="chip" onclick="setQuery('Dynamic programming mein memoization kya hota hai?')">DP memoization</div>
-          <div class="chip" onclick="setQuery('Dijkstra algorithm explain karo')">Dijkstra</div>
-          <div class="chip" onclick="setQuery('Trie data structure kya hota hai?')">Trie</div>
-          <div class="chip" onclick="setQuery('Sliding window technique kab use karein?')">Sliding window</div>
+        <div id="stat-pill" class="flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800/80 border border-slate-700/60 text-xs text-slate-300 font-medium">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span id="stat-text">4,140 chunks · 126 videos</span>
         </div>
       </div>
 
+      <!-- Search Input Section -->
+      <div class="w-full md:max-w-2xl flex items-center gap-2">
+        <div class="relative flex-1">
+          <div class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <input
+            type="text"
+            id="query-input"
+            placeholder="Ask anything about DSA... (e.g. 'binary search algorithm' or 'LCS memoization')"
+            class="w-full bg-slate-850/90 border border-slate-700/70 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-slate-100 placeholder-slate-400 text-sm rounded-xl pl-10 pr-10 py-2.5 outline-none transition shadow-inner font-medium"
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <div id="input-loading-spinner" class="hidden absolute right-3 top-1/2 -translate-y-1/2">
+            <svg class="animate-spin h-4 w-4 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+            </svg>
+          </div>
+        </div>
+        <button
+          id="ask-btn"
+          onclick="handleAsk()"
+          class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-purple-600 text-white font-semibold text-sm shadow-lg shadow-indigo-600/30 transition hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center gap-1.5 flex-shrink-0"
+        >
+          <span>Ask</span>
+          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+          </svg>
+        </button>
+      </div>
     </div>
-  </div>
-</div>
+  </header>
 
-<!-- ── Scripts ───────────────────────────────────────────────────────── -->
-<script>
-// ── App State ─────────────────────────────────────────────────────────
-const State = {
-  player: null,
-  currentVideoId: null,
-  syncInterval: null,
-  activeCitationIdx: -1,
-};
+  <!-- ── 2. Answer & Complexity Banner (Collapsible / Top Section) ──── -->
+  <section id="answer-banner" class="hidden bg-slate-900 border-b border-slate-800 px-6 py-4 flex-shrink-0 shadow-md">
+    <div class="max-w-7xl mx-auto space-y-3">
+      <!-- Top Row: Label, Complexity Badges, Latency -->
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-semibold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5 bg-indigo-500/10 px-2.5 py-1 rounded-md border border-indigo-500/20">
+            <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+            </svg>
+            <span>Concept Summary</span>
+          </span>
+          <span id="answer-meta" class="text-xs text-slate-400 font-mono"></span>
+        </div>
 
-// ── YouTube IFrame API ────────────────────────────────────────────────
-const tag = document.createElement('script');
-tag.src = 'https://www.youtube.com/iframe_api';
-document.head.appendChild(tag);
+        <!-- Complexity Badge Pills -->
+        <div id="complexity-container" class="flex flex-wrap items-center gap-2 text-xs font-mono font-medium">
+          <!-- Populated dynamically with clean SVG tags -->
+        </div>
+      </div>
 
-function onYouTubeIframeAPIReady() {
-  State.player = new YT.Player('player', {
-    height: '100%', width: '100%',
-    playerVars: { autoplay: 0, rel: 0, modestbranding: 1, controls: 1 },
-    events: {
-      onStateChange: (e) => {
-        const PLAYING = YT.PlayerState.PLAYING;
-        const PAUSED  = YT.PlayerState.PAUSED;
-        if (e.data === PLAYING) {
-          document.getElementById('live-badge').style.display = 'flex';
-          startSync();
-        } else {
-          document.getElementById('live-badge').style.display = 'none';
-          if (e.data === PAUSED) stopSync();
+      <!-- Main Explanation Body -->
+      <div id="answer-body" class="text-sm text-slate-200 leading-relaxed max-w-5xl space-y-2">
+        <!-- Rendered summary paragraphs and inline buttons -->
+      </div>
+
+      <!-- Referenced Citations Row -->
+      <div class="flex items-center gap-2 pt-1">
+        <span class="text-xs font-semibold text-slate-400 flex items-center gap-1.5 flex-shrink-0">
+          <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          <span>Referenced Lectures:</span>
+        </span>
+        <div id="citations-list" class="flex flex-wrap gap-2">
+          <!-- Citation buttons -->
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 3. Refusal Banner (Shown only when out-of-syllabus query occurs) ── -->
+  <section id="refusal-banner" class="hidden bg-amber-950/40 border-b border-amber-800/50 px-6 py-4 flex-shrink-0">
+    <div class="max-w-4xl mx-auto flex items-start gap-3 text-amber-200">
+      <div class="p-1.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 mt-0.5">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+        </svg>
+      </div>
+      <div class="space-y-1">
+        <h4 class="font-semibold text-sm tracking-wide text-amber-300" id="refusal-title">Ye topic in lectures me cover nahi hua.</h4>
+        <p class="text-xs text-amber-300/80 leading-relaxed" id="refusal-desc">
+          This question is outside the scope of the DSA video playlist. The refusal guard stopped the request before invoking the LLM, spending zero tokens.
+        </p>
+        <div id="refusal-meta" class="text-[11px] font-mono text-amber-400/60 pt-1"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 4. Main Workspace (Split Screen: Player 55% + Synchronized Transcript 45%) ── -->
+  <main class="flex-1 flex overflow-hidden">
+    <!-- Left Panel: YouTube Embedded Player (55% width) -->
+    <div id="player-column" class="w-full lg:w-[55%] flex flex-col border-r border-slate-800 bg-slate-950/60 p-4 lg:p-6 overflow-y-auto">
+      <div class="flex-1 flex flex-col justify-center max-w-4xl mx-auto w-full">
+        <!-- Video Container (16:9 Aspect Ratio) -->
+        <div class="relative w-full aspect-video rounded-2xl overflow-hidden bg-slate-900 border border-slate-800 shadow-2xl ring-1 ring-white/5">
+          <div id="player-container" class="w-full h-full">
+            <div id="player" class="w-full h-full"></div>
+          </div>
+          <!-- Player Overlay / Empty placeholder before first search -->
+          <div id="player-placeholder" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-slate-900/95 z-10 transition-opacity duration-300">
+            <div class="w-14 h-14 rounded-2xl bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center mb-3 text-indigo-400">
+              <svg class="w-6 h-6 fill-current translate-x-0.5" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </div>
+            <h3 class="text-base font-semibold text-slate-200">No Lecture Selected</h3>
+            <p class="text-xs text-slate-400 max-w-sm mt-1">
+              Ask a question above or click any suggested query below to stream the video directly to the spoken timestamp.
+            </p>
+          </div>
+        </div>
+
+        <!-- Active Video Metadata Bar -->
+        <div class="mt-4 flex items-center justify-between gap-4 px-1">
+          <div class="min-w-0">
+            <h3 id="active-video-title" class="text-sm font-semibold text-slate-200 truncate">
+              Ready for DSA query
+            </h3>
+            <p id="active-video-sub" class="text-xs text-slate-400 flex items-center gap-2 mt-0.5">
+              <span>Timestamp deep-linked</span>
+              <span>·</span>
+              <span id="active-video-ts" class="font-mono text-indigo-300">00:00:00</span>
+            </p>
+          </div>
+          <div id="live-indicator" class="hidden items-center gap-2 px-2.5 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-[11px] font-semibold text-rose-400 uppercase tracking-wider">
+            <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+            Syncing
+          </div>
+        </div>
+
+        <!-- Suggestion Chips -->
+        <div id="suggestions-box" class="mt-8 border-t border-slate-800/80 pt-6">
+          <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Popular DSA Topics to Explore:</p>
+          <div class="flex flex-wrap gap-2">
+            <button onclick="setQuery('what is binary search algorithm')" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-indigo-500/50 text-xs text-slate-300 hover:text-indigo-300 transition flex items-center gap-1.5">
+              <span>Binary Search Algorithm</span>
+            </button>
+            <button onclick="setQuery('LCS table initialization kaise karein?')" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-indigo-500/50 text-xs text-slate-300 hover:text-indigo-300 transition flex items-center gap-1.5">
+              <span>LCS Table Initialization</span>
+            </button>
+            <button onclick="setQuery('Dijkstra algorithm shortest path')" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-indigo-500/50 text-xs text-slate-300 hover:text-indigo-300 transition flex items-center gap-1.5">
+              <span>Dijkstra Algorithm</span>
+            </button>
+            <button onclick="setQuery('sliding window maximum')" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-indigo-500/50 text-xs text-slate-300 hover:text-indigo-300 transition flex items-center gap-1.5">
+              <span>Sliding Window Maximum</span>
+            </button>
+            <button onclick="setQuery('React hooks useEffect kaise kaam karta hai?')" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-amber-500/50 text-xs text-slate-400 hover:text-amber-300 transition flex items-center gap-1.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+              <span>React useEffect (Refusal Test)</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Panel: Synchronized Transcript (45% width) -->
+    <div class="hidden lg:flex w-[45%] flex-col bg-slate-900/50 backdrop-blur">
+      <!-- Transcript Header -->
+      <div class="px-6 py-3.5 border-b border-slate-800 flex items-center justify-between bg-slate-900/80 flex-shrink-0">
+        <div class="flex items-center gap-2">
+          <span class="text-sm font-semibold text-slate-200">Synchronized Transcript</span>
+          <span id="transcript-count-badge" class="text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-800 text-slate-400 border border-slate-700">0 lines</span>
+        </div>
+        <div class="text-xs text-slate-400 flex items-center gap-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
+          <span>Click any line to seek</span>
+        </div>
+      </div>
+
+      <!-- Transcript Sentences Container (Auto-scrollable) -->
+      <div id="transcript-container" class="flex-1 overflow-y-auto p-6 space-y-2.5 relative">
+        <div id="transcript-placeholder" class="h-full flex flex-col items-center justify-center text-center p-8 text-slate-500">
+          <div class="w-12 h-12 rounded-2xl bg-slate-800/60 border border-slate-700/60 flex items-center justify-center mb-3 text-slate-400">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          <p class="text-sm font-medium text-slate-400">No Transcript Loaded</p>
+          <p class="text-xs text-slate-500 max-w-xs mt-1">
+            When you run a search, the 75-second spoken transcript sentences will sync here in real time as the video plays.
+          </p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ── 5. Client Application & Synchronization Scripts ─────────────── -->
+  <script>
+    // ── Application State ─────────────────────────────────────────────
+    const AppState = {
+      player: null,
+      playerReady: false,
+      currentVideoId: null,
+      activeCitation: null,
+      activeSegments: [],
+      syncTimer: null,
+      activeSegmentIndex: -1,
+      lastAnswerData: null,
+    };
+
+    // ── Load YouTube IFrame API ───────────────────────────────────────
+    const ytScript = document.createElement('script');
+    ytScript.src = 'https://www.youtube.com/iframe_api';
+    document.head.appendChild(ytScript);
+
+    function onYouTubeIframeAPIReady() {
+      AppState.player = new YT.Player('player', {
+        height: '100%',
+        width: '100%',
+        playerVars: {
+          autoplay: 1,
+          rel: 0,
+          modestbranding: 1,
+          controls: 1,
+          origin: window.location.origin,
+        },
+        events: {
+          onReady: () => {
+            AppState.playerReady = true;
+          },
+          onStateChange: onPlayerStateChange,
+        },
+      });
+    }
+
+    function onPlayerStateChange(event) {
+      const liveBadge = document.getElementById('live-indicator');
+      if (event.data === YT.PlayerState.PLAYING) {
+        liveBadge.classList.remove('hidden');
+        liveBadge.classList.add('flex');
+        startLiveSync();
+      } else {
+        liveBadge.classList.add('hidden');
+        liveBadge.classList.remove('flex');
+        if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
+          stopLiveSync();
         }
       }
     }
-  });
-}
 
-function loadVideo(videoId, seekSec) {
-  if (!State.player) return;
-  if (State.currentVideoId !== videoId) {
-    State.currentVideoId = videoId;
-    State.player.loadVideoById({ videoId, startSeconds: seekSec });
-  } else {
-    State.player.seekTo(seekSec, true);
-    State.player.playVideo();
-  }
-}
+    // ── Video Loading & Seeking ───────────────────────────────────────
+    function playLecture(videoId, seekSec, title) {
+      const placeholder = document.getElementById('player-placeholder');
+      if (placeholder) placeholder.style.display = 'none';
 
-// ── Player Timestamp Sync ─────────────────────────────────────────────
-function startSync() {
-  if (State.syncInterval) return;
-  State.syncInterval = setInterval(syncTime, 300);
-}
-function stopSync() {
-  clearInterval(State.syncInterval);
-  State.syncInterval = null;
-}
-function syncTime() {
-  if (!State.player) return;
-  const t = State.player.getCurrentTime();
-  document.getElementById('player-ts').textContent = formatTs(t);
-}
+      document.getElementById('active-video-title').textContent = title || 'Lecture Playing';
+      document.getElementById('active-video-ts').textContent = formatSeconds(seekSec);
 
-// ── Timestamp Citations Rendering ─────────────────────────────────────
-function renderTimestamps(citations) {
-  const row = document.getElementById('timestamps-row');
-  row.innerHTML = '';
-  if (!citations || !citations.length) {
-    document.getElementById('timestamps-section').classList.remove('visible');
-    return;
-  }
-
-  citations.forEach((c, i) => {
-    const card = document.createElement('div');
-    card.className = 'timestamp-card';
-    card.id = `ts-card-${i}`;
-    card.innerHTML = `
-      <div class="card-left">
-        <div class="card-play-icon">▶</div>
-        <div class="card-details">
-          <div class="card-title" title="${c.title}">${c.title}</div>
-          <div class="card-preview">${c.chunk_preview || 'Lecture excerpt'}</div>
-        </div>
-      </div>
-      <div class="card-right">
-        <span class="ts-pill">📍 ${formatTs(c.start_sec)}</span>
-      </div>
-    `;
-    card.onclick = () => handleTimestampClick(c, i);
-    row.appendChild(card);
-  });
-
-  document.getElementById('timestamps-section').classList.add('visible');
-
-  // Auto-load the first timestamp
-  if (citations.length > 0) {
-    handleTimestampClick(citations[0], 0);
-  }
-}
-
-function handleTimestampClick(citation, idx) {
-  document.querySelectorAll('.timestamp-card').forEach((el, i) => {
-    el.classList.toggle('active', i === idx);
-  });
-  State.activeCitationIdx = idx;
-
-  document.getElementById('player-title').textContent = citation.title;
-  loadVideo(citation.video_id, citation.seek_sec);
-}
-
-// ── Badge Rendering ───────────────────────────────────────────────────
-function renderBadge(badge) {
-  const row = document.getElementById('badge-row');
-  row.innerHTML = '';
-  if (!badge) return;
-  row.innerHTML = `
-    <span class="badge-pill badge-time">⏱ ${badge.time_complexity}</span>
-    <span class="badge-pill badge-space">💾 ${badge.space_complexity}</span>
-    <span class="badge-pill badge-pattern">🔷 ${badge.pattern}</span>
-  `;
-}
-
-// ── Summary Rendering ─────────────────────────────────────────────────
-function formatSummaryHtml(rawText, citations) {
-  if (!rawText) return '';
-
-  // 1. Strip out trailing complexity badge string if present in answer text
-  let cleanText = rawText.replace(/\[Time:\s*[^|]+?\s*\|\s*Space:\s*[^|]+?\s*\|\s*Pattern:\s*[^\]]+?\]/gi, '').trim();
-
-  // Helper to clean LaTeX math expressions
-  function cleanFormula(formula) {
-    return formula
-      .replace(/\\text\{([^}]+)\}/g, '$1')
-      .replace(/\\mathrm\{([^}]+)\}/g, '$1')
-      .replace(/\\mathbf\{([^}]+)\}/g, '$1')
-      .replace(/\\times/g, '×')
-      .replace(/\\le(q)?\b/g, '≤')
-      .replace(/\\ge(q)?\b/g, '≥')
-      .replace(/\\neq\b/g, '≠')
-      .replace(/\\approx\b/g, '≈')
-      .replace(/\\cdot\b/g, '·')
-      .replace(/\\left\s*([(\[{|])/g, '$1')
-      .replace(/\\right\s*([)\]}|])/g, '$1')
-      .replace(/\\([a-zA-Z]+)/g, '')
-      .replace(/[{}]/g, '')
-      .trim();
-  }
-
-  // 2. Convert block formulas $$...$$ before HTML escaping
-  const blockFormulas = [];
-  cleanText = cleanText.replace(/\$\$(.*?)\$\$/gs, (match, f) => {
-    const placeholder = `___BLOCK_FORMULA_${blockFormulas.length}___`;
-    blockFormulas.push(cleanFormula(f));
-    return placeholder;
-  });
-
-  // 3. Convert inline formulas $...$
-  const inlineFormulas = [];
-  cleanText = cleanText.replace(/\$([^\$\n]+?)\$/g, (match, f) => {
-    const placeholder = `___INLINE_FORMULA_${inlineFormulas.length}___`;
-    inlineFormulas.push(cleanFormula(f));
-    return placeholder;
-  });
-
-  // 4. Escape basic raw HTML
-  cleanText = cleanText
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-
-  // 5. Restore block formulas as styled formula cards
-  blockFormulas.forEach((formula, idx) => {
-    cleanText = cleanText.replace(
-      `___BLOCK_FORMULA_${idx}___`,
-      `<div class="formula-card"><span class="formula-badge">EQUATION</span><code>${formula}</code></div>`
-    );
-  });
-
-  // 6. Restore inline formulas
-  inlineFormulas.forEach((formula, idx) => {
-    cleanText = cleanText.replace(
-      `___INLINE_FORMULA_${idx}___`,
-      `<code class="formula-inline">${formula}</code>`
-    );
-  });
-
-  // 7. Convert markdown headings (#, ##, ###, ####)
-  cleanText = cleanText.replace(/^[ \t]*#{1,6}\s*(.+?)[ \t]*$/gm, '<h4 class="summary-heading">$1</h4>');
-
-  // 8. Convert bold **text**
-  cleanText = cleanText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-
-  // 9. Convert inline `code`
-  cleanText = cleanText.replace(/`([^`]+)`/g, '<code class="code-pill">$1</code>');
-
-  // 10. Convert citations like [1], [1, 2], [1, 2, 3] into interactive clickable timestamp buttons
-  cleanText = cleanText.replace(/\[(\d+(?:\s*,\s*\d+)*)\]/g, (match, numbersStr) => {
-    const nums = numbersStr.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
-    return nums.map(p1 => {
-      const idx = p1 - 1;
-      if (citations && citations[idx]) {
-        const cite = citations[idx];
-        return `<button class="inline-cite-btn" onclick="handleTimestampClick(window._lastCitations[${idx}], ${idx})" title="${cite.title} @ ${formatTs(cite.start_sec)}">📍 [${p1}]</button>`;
+      if (!AppState.player || !AppState.playerReady) {
+        setTimeout(() => playLecture(videoId, seekSec, title), 300);
+        return;
       }
-      return `<span class="inline-cite-tag">[${p1}]</span>`;
-    }).join(' ');
-  });
 
-  // 11. Fix floating punctuation before commas/periods (e.g. "📍 [1] ." -> "📍 [1].")
-  cleanText = cleanText.replace(/\s+([.,;:!?])/g, '$1');
-
-  // 12. Line-by-line assembly for lists, headings, formula boxes, and paragraphs
-  const lines = cleanText.split('\n');
-  let html = '';
-  let inUl = false;
-  let inOl = false;
-
-  function closeLists() {
-    if (inUl) { html += '</ul>'; inUl = false; }
-    if (inOl) { html += '</ol>'; inOl = false; }
-  }
-
-  for (let line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed) {
-      closeLists();
-      continue;
-    }
-
-    if (trimmed.startsWith('<h4 class="summary-heading"')) {
-      closeLists();
-      html += trimmed;
-    } else if (trimmed.startsWith('<div class="formula-card"')) {
-      if (inOl || inUl) {
-        html += `<div style="margin: 4px 0 6px 0;">${trimmed}</div>`;
+      if (AppState.currentVideoId !== videoId) {
+        AppState.currentVideoId = videoId;
+        AppState.player.loadVideoById({
+          videoId: videoId,
+          startSeconds: Math.max(0, seekSec),
+        });
       } else {
-        html += trimmed;
+        AppState.player.seekTo(Math.max(0, seekSec), true);
+        AppState.player.playVideo();
       }
-    } else if (/^[\*\-]\s+(.*)$/.test(trimmed)) {
-      if (inOl) { html += '</ol>'; inOl = false; }
-      if (!inUl) {
-        html += '<ul>';
-        inUl = true;
-      }
-      const itemContent = trimmed.replace(/^[\*\-]\s+/, '');
-      html += `<li>${itemContent}</li>`;
-    } else if (/^\d+\.\s*(.*)$/.test(trimmed)) {
-      if (inUl) { html += '</ul>'; inUl = false; }
-      if (!inOl) {
-        html += '<ol>';
-        inOl = true;
-      }
-      const itemContent = trimmed.replace(/^\d+\.\s*/, '');
-      html += `<li>${itemContent}</li>`;
-    } else {
-      closeLists();
-      html += `<p>${trimmed}</p>`;
     }
-  }
-  closeLists();
 
-  return html;
-}
+    // ── Live Transcript Synchronization (250ms interval) ─────────────
+    function startLiveSync() {
+      if (AppState.syncTimer) return;
+      AppState.syncTimer = setInterval(syncActiveTranscriptLine, 250);
+    }
 
-function renderSummary(response) {
-  const card = document.getElementById('summary-card');
-  const textEl = document.getElementById('summary-text');
-  const metaEl = document.getElementById('summary-meta');
+    function stopLiveSync() {
+      if (AppState.syncTimer) {
+        clearInterval(AppState.syncTimer);
+        AppState.syncTimer = null;
+      }
+    }
 
-  window._lastCitations = response.citations || [];
+    function syncActiveTranscriptLine() {
+      if (!AppState.player || !AppState.playerReady) return;
+      if (typeof AppState.player.getCurrentTime !== 'function') return;
 
-  textEl.innerHTML = formatSummaryHtml(response.answer, response.citations);
-  if (response.tokens_used) {
-    metaEl.textContent = `${response.tokens_used} tokens · ${response.latency_ms}ms`;
-  } else {
-    metaEl.textContent = `${response.latency_ms}ms`;
-  }
+      const currentTime = AppState.player.getCurrentTime();
+      document.getElementById('active-video-ts').textContent = formatSeconds(currentTime);
 
-  renderBadge(response.complexity_badge);
-  card.classList.add('visible');
-}
+      if (!AppState.activeSegments || AppState.activeSegments.length === 0) return;
 
-function renderRefusal(response) {
-  const area = document.getElementById('content-area');
-  const existing = area.querySelector('.refusal-card');
-  if (existing) existing.remove();
+      // Find the segment matching current time
+      let matchedIdx = -1;
+      for (let i = 0; i < AppState.activeSegments.length; i++) {
+        const seg = AppState.activeSegments[i];
+        if (currentTime >= seg.start && currentTime <= (seg.end + 0.3)) {
+          matchedIdx = i;
+          break;
+        }
+      }
 
-  const div = document.createElement('div');
-  div.className = 'refusal-card';
-  div.innerHTML = `
-    <div class="refusal-icon">🚫</div>
-    <div>
-      <div class="refusal-text">${response.answer}</div>
-      <div class="refusal-meta">Distance: ${response.retrieval_distance} (threshold: 0.5) · 0 tokens used</div>
-    </div>
-  `;
-  area.insertBefore(div, area.firstChild);
-}
+      if (matchedIdx === -1) {
+        for (let i = AppState.activeSegments.length - 1; i >= 0; i--) {
+          if (currentTime >= AppState.activeSegments[i].start) {
+            matchedIdx = i;
+            break;
+          }
+        }
+      }
 
-// ── Stats ─────────────────────────────────────────────────────────────
-async function loadStats() {
-  try {
-    const r = await fetch('/api/stats');
-    if (!r.ok) return;
-    const s = await r.json();
-    document.getElementById('stat-chunks').innerHTML = `
-      <div class="stat-dot"></div>
-      <span>${s.total_chunks.toLocaleString()} chunks · ${s.total_videos} videos</span>
-    `;
-  } catch (_) { /* API not running in dev */ }
-}
+      if (matchedIdx !== -1 && matchedIdx !== AppState.activeSegmentIndex) {
+        highlightSegment(matchedIdx);
+      }
+    }
 
-// ── Main Ask Handler ──────────────────────────────────────────────────
-async function handleAsk() {
-  const input = document.getElementById('query-input');
-  const query = input.value.trim();
-  if (!query) return;
+    function highlightSegment(index) {
+      AppState.activeSegmentIndex = index;
+      const allLines = document.querySelectorAll('.transcript-line');
 
-  // Reset UI
-  document.getElementById('empty-state').style.display = 'none';
-  document.getElementById('summary-card').classList.remove('visible');
-  document.getElementById('timestamps-section').classList.remove('visible');
-  document.getElementById('loading-state').classList.add('visible');
-  document.getElementById('ask-btn').disabled = true;
-  document.querySelectorAll('.refusal-card').forEach(el => el.remove());
+      allLines.forEach((line, idx) => {
+        if (idx === index) {
+          line.className = 'transcript-line block p-3.5 rounded-xl border border-indigo-500/40 bg-indigo-950/70 text-indigo-100 shadow-md shadow-indigo-950/50 cursor-pointer text-sm font-medium';
+          const indicator = line.querySelector('.line-indicator');
+          if (indicator) indicator.className = 'line-indicator text-indigo-400 font-bold';
+          line.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } else {
+          line.className = 'transcript-line block p-3 rounded-xl border border-slate-850 hover:border-slate-700 bg-slate-900/60 hover:bg-slate-850/80 text-slate-300 hover:text-slate-100 cursor-pointer text-sm';
+          const indicator = line.querySelector('.line-indicator');
+          if (indicator) indicator.className = 'line-indicator text-slate-500';
+        }
+      });
+    }
 
-  try {
-    const response = await fetch('/api/ask', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, top_k: 5 }),
+    // ── Render Transcript in Right Panel ──────────────────────────────
+    function renderTranscript(segments, seekSec) {
+      const container = document.getElementById('transcript-container');
+      const badge = document.getElementById('transcript-count-badge');
+      AppState.activeSegments = segments || [];
+      AppState.activeSegmentIndex = -1;
+
+      if (!segments || segments.length === 0) {
+        container.innerHTML = `
+          <div class="h-full flex flex-col items-center justify-center text-center p-8 text-slate-500">
+            <div class="w-12 h-12 rounded-2xl bg-slate-800/60 border border-slate-700/60 flex items-center justify-center mb-3 text-slate-400">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <p class="text-sm font-medium text-slate-400">No Sentences Available</p>
+            <p class="text-xs text-slate-500 max-w-xs mt-1">This chunk contains no segment timestamps.</p>
+          </div>
+        `;
+        badge.textContent = '0 lines';
+        return;
+      }
+
+      badge.textContent = `${segments.length} lines`;
+      container.innerHTML = '';
+
+      segments.forEach((seg, idx) => {
+        const lineEl = document.createElement('div');
+        lineEl.className = 'transcript-line block p-3 rounded-xl border border-slate-850 hover:border-slate-700 bg-slate-900/60 hover:bg-slate-850/80 text-slate-300 hover:text-slate-100 cursor-pointer text-sm';
+        lineEl.id = `trans-line-${idx}`;
+
+        lineEl.innerHTML = `
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex items-start gap-2 flex-1">
+              <span class="line-indicator text-slate-500 font-mono text-xs mt-0.5 select-none">
+                <svg class="w-3.5 h-3.5 fill-current inline-block" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z"/>
+                </svg>
+              </span>
+              <p class="leading-relaxed">${escapeHtml(seg.text)}</p>
+            </div>
+            <span class="font-mono text-xs px-2 py-0.5 rounded bg-slate-950/80 border border-slate-800 text-slate-400 select-none flex-shrink-0">
+              ${formatSeconds(seg.start)}
+            </span>
+          </div>
+        `;
+
+        lineEl.onclick = () => {
+          if (AppState.player && AppState.playerReady) {
+            AppState.player.seekTo(seg.start, true);
+            AppState.player.playVideo();
+            highlightSegment(idx);
+          }
+        };
+
+        container.appendChild(lineEl);
+      });
+
+      let initialIdx = 0;
+      for (let i = 0; i < segments.length; i++) {
+        if (segments[i].start >= seekSec) {
+          initialIdx = i;
+          break;
+        }
+      }
+      highlightSegment(initialIdx);
+    }
+
+    // ── Render Citations & Complexity Badges ───────────────────────────
+    function renderAnswerSection(data) {
+      const banner = document.getElementById('answer-banner');
+      const refusalBanner = document.getElementById('refusal-banner');
+      const bodyEl = document.getElementById('answer-body');
+      const metaEl = document.getElementById('answer-meta');
+      const complexityEl = document.getElementById('complexity-container');
+      const citationsList = document.getElementById('citations-list');
+
+      refusalBanner.classList.add('hidden');
+      banner.classList.remove('hidden');
+
+      metaEl.textContent = `${data.tokens_used} tokens · ${data.latency_ms}ms · dist: ${data.retrieval_distance}`;
+
+      // 1. Complexity Badge with clean SVG icons
+      complexityEl.innerHTML = '';
+      if (data.complexity_badge) {
+        const b = data.complexity_badge;
+        complexityEl.innerHTML = `
+          <span class="px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-medium flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span>Time: ${escapeHtml(b.time_complexity)}</span>
+          </span>
+          <span class="px-2.5 py-1 rounded-lg bg-sky-500/10 border border-sky-500/30 text-sky-400 font-medium flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1.5 3 3.5 3h9c2 0 3.5-1 3.5-3V7c0-2-1.5-3-3.5-3h-9C5.5 4 4 5 4 7z"/></svg>
+            <span>Space: ${escapeHtml(b.space_complexity)}</span>
+          </span>
+          <span class="px-2.5 py-1 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400 font-medium flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+            <span>Pattern: ${escapeHtml(b.pattern)}</span>
+          </span>
+        `;
+      }
+
+      // 2. Format Answer text with interactive inline buttons
+      bodyEl.innerHTML = formatMarkdownAnswer(data.answer, data.citations);
+
+      // 3. Render Referenced Citations buttons
+      citationsList.innerHTML = '';
+      if (data.citations && data.citations.length > 0) {
+        data.citations.forEach((c, idx) => {
+          const btn = document.createElement('button');
+          btn.className = 'cite-btn px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-750 border border-slate-700 hover:border-indigo-500 text-xs text-slate-200 hover:text-indigo-300 font-medium transition flex items-center gap-1.5';
+          btn.innerHTML = `
+            <span class="text-indigo-400 font-bold">[${idx + 1}]</span>
+            <span class="max-w-[200px] truncate">${escapeHtml(c.title)}</span>
+            <span class="font-mono text-slate-400">@${formatSeconds(c.start_sec)}</span>
+          `;
+          btn.onclick = () => selectCitation(c, idx);
+          citationsList.appendChild(btn);
+        });
+
+        selectCitation(data.citations[0], 0);
+      }
+    }
+
+    function selectCitation(citation, index) {
+      AppState.activeCitation = citation;
+
+      const buttons = document.querySelectorAll('.cite-btn');
+      buttons.forEach((btn, idx) => {
+        if (idx === index) {
+          btn.className = 'cite-btn px-3 py-1.5 rounded-lg bg-indigo-900/60 border border-indigo-500 text-xs text-indigo-100 font-semibold shadow-md shadow-indigo-950/50 flex items-center gap-1.5';
+        } else {
+          btn.className = 'cite-btn px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-750 border border-slate-700 hover:border-indigo-500 text-xs text-slate-200 hover:text-indigo-300 font-medium transition flex items-center gap-1.5';
+        }
+      });
+
+      playLecture(citation.video_id, citation.seek_sec, citation.title);
+      renderTranscript(citation.segments, citation.seek_sec);
+    }
+
+    // ── Render Refusal State ──────────────────────────────────────────
+    function renderRefusalState(data) {
+      const banner = document.getElementById('answer-banner');
+      const refusalBanner = document.getElementById('refusal-banner');
+      const placeholder = document.getElementById('player-placeholder');
+
+      banner.classList.add('hidden');
+      refusalBanner.classList.remove('hidden');
+
+      document.getElementById('refusal-title').textContent = data.answer || "Ye topic in lectures me cover nahi hua.";
+      document.getElementById('refusal-meta').textContent = `Distance: ${data.retrieval_distance} (cutoff: 0.46) · Tokens: 0 · 0 LLM calls`;
+
+      if (placeholder) {
+        placeholder.style.display = 'flex';
+        placeholder.innerHTML = `
+          <div class="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-3 text-amber-400">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+            </svg>
+          </div>
+          <h3 class="text-base font-semibold text-slate-200">Out-of-Syllabus Query</h3>
+          <p class="text-xs text-slate-400 max-w-sm mt-1">
+            The refusal guard safely rejected this question without consuming tokens.
+          </p>
+        `;
+      }
+
+      renderTranscript([], 0);
+      document.getElementById('active-video-title').textContent = 'Query Refused';
+      document.getElementById('active-video-ts').textContent = '00:00:00';
+    }
+
+    // ── Main Ask Handler ──────────────────────────────────────────────
+    async function handleAsk() {
+      const input = document.getElementById('query-input');
+      const query = input.value.trim();
+      
+      if (!query || query.length < 3) {
+        input.focus();
+        return;
+      }
+
+      const askBtn = document.getElementById('ask-btn');
+      const spinner = document.getElementById('input-loading-spinner');
+
+      askBtn.disabled = true;
+      spinner.classList.remove('hidden');
+
+      try {
+        const res = await fetch('/api/ask', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query, top_k: 5 }),
+        });
+
+        if (!res.ok) {
+          throw new Error(`API error HTTP ${res.status}`);
+        }
+
+        const data = await res.json();
+        AppState.lastAnswerData = data;
+
+        if (data.is_refused) {
+          renderRefusalState(data);
+        } else {
+          renderAnswerSection(data);
+        }
+      } catch (err) {
+        alert(`Failed to fetch answer: ${err.message}`);
+      } finally {
+        askBtn.disabled = false;
+        spinner.classList.add('hidden');
+      }
+    }
+
+    // ── Helper Formatter for Markdown / Citations ─────────────────────
+    function formatMarkdownAnswer(rawText, citations) {
+      if (!rawText) return '';
+
+      let text = rawText.replace(/\[Time:\s*[^|]+?\s*\|\s*Space:\s*[^|]+?\s*\|\s*Pattern:\s*[^\]]+?\]/gi, '').trim();
+
+      text = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      text = text.replace(/\*\*(.*?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>');
+      text = text.replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 rounded bg-slate-800 text-indigo-300 font-mono text-xs">$1</code>');
+
+      text = text.replace(/\[(\d+)\]/g, (match, numStr) => {
+        const idx = parseInt(numStr, 10) - 1;
+        if (citations && citations[idx]) {
+          return `<button onclick="selectCitation(AppState.lastAnswerData.citations[${idx}], ${idx})" class="inline-flex items-center px-1.5 py-0.5 mx-0.5 rounded bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 hover:text-indigo-100 text-xs font-mono font-semibold transition border border-indigo-500/30">📍 [${numStr}]</button>`;
+        }
+        return `<span class="inline-flex items-center px-1 py-0.5 mx-0.5 rounded bg-slate-800 text-slate-400 text-xs font-mono">[${numStr}]</span>`;
+      });
+
+      const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+      return lines.map(line => {
+        if (line.startsWith('*') || line.startsWith('-')) {
+          return `<div class="flex items-start gap-2 pl-2"><span class="text-indigo-400 mt-1">•</span><span>${line.substring(1).trim()}</span></div>`;
+        }
+        return `<p class="leading-relaxed">${line}</p>`;
+      }).join('');
+    }
+
+    function formatSeconds(sec) {
+      const s = Math.floor(sec || 0);
+      const m = Math.floor((s % 3600) / 60);
+      const ss = s % 60;
+      return `${String(m).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
+    }
+
+    function escapeHtml(str) {
+      return (str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function setQuery(q) {
+      const input = document.getElementById('query-input');
+      input.value = q;
+      input.focus();
+      handleAsk();
+    }
+
+    document.getElementById('query-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        handleAsk();
+      }
     });
 
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-
-    if (data.is_refused) {
-      renderRefusal(data);
-    } else {
-      renderSummary(data);
-      renderTimestamps(data.citations);
-    }
-  } catch (err) {
-    const div = document.createElement('div');
-    div.className = 'refusal-card';
-    div.innerHTML = `<div class="refusal-icon">⚠️</div><div><div class="refusal-text">Error: ${err.message}</div><div class="refusal-meta">Server check: uv run uvicorn api.main:app --reload</div></div>`;
-    document.getElementById('content-area').insertBefore(div, document.getElementById('content-area').firstChild);
-  } finally {
-    document.getElementById('loading-state').classList.remove('visible');
-    document.getElementById('ask-btn').disabled = false;
-  }
-}
-
-// ── Utilities ─────────────────────────────────────────────────────────
-function formatTs(sec) {
-  const s = Math.floor(sec);
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const ss = s % 60;
-  if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
-  return `${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
-}
-
-function setQuery(text) {
-  document.getElementById('query-input').value = text;
-  document.getElementById('query-input').focus();
-}
-
-// Enter key triggers ask
-document.getElementById('query-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.shiftKey) handleAsk();
-});
-
-// Load stats on boot
-loadStats();
-</script>
+    fetch('/api/stats')
+      .then(r => r.json())
+      .then(stats => {
+        if (stats && stats.total_chunks) {
+          document.getElementById('stat-text').textContent = `${stats.total_chunks.toLocaleString()} chunks · ${stats.total_videos} videos`;
+        }
+      })
+      .catch(() => {});
+  </script>
 </body>
 </html>
