@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DSA TubeRAG — Padho with Pratyush</title>
+  <meta name="description" content="Timestamp-accurate RAG system for the Padho with Pratyush DSA playlist. Ask DSA questions in Hinglish and jump directly to the lecture timestamp." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Design Tokens ───────────────────────────────────────────── */
+    :root {
+      --bg-base:     #0a0f1e;
+      --bg-panel:    #111827;
+      --bg-card:     #1a2235;
+      --bg-input:    #1e2a3a;
+      --border:      #2a3a52;
+      --accent:      #6366f1;
+      --accent-glow: #6366f140;
+      --accent-2:    #8b5cf6;
+      --green:       #22c55e;
+      --blue:        #3b82f6;
+      --purple:      #a855f7;
+      --amber:       #f59e0b;
+      --text:        #f1f5f9;
+      --text-muted:  #94a3b8;
+      --text-dim:    #475569;
+      --highlight:   #fef3c720;
+      --highlight-border: #f59e0b;
+      --radius:      12px;
+      --radius-sm:   8px;
+    }
+
+    /* ── Reset ───────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg-base);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ──────────────────────────────────────────────────── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      z-index: 10;
+    }
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .header-logo {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+    .header-title {
+      font-size: 16px; font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .header-sub { font-size: 12px; color: var(--text-muted); }
+    .header-stats {
+      display: flex; align-items: center; gap: 16px;
+      font-size: 12px; color: var(--text-muted);
+    }
+    .stat-pill {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 20px; padding: 4px 12px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .stat-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+
+    /* ── Main Split Layout ───────────────────────────────────────── */
+    .main {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ── LEFT — Player Panel ─────────────────────────────────────── */
+    .player-panel {
+      width: 50%;
+      display: flex;
+      flex-direction: column;
+      background: #000;
+      border-right: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .player-wrapper {
+      position: relative;
+      width: 100%;
+      padding-top: 56.25%; /* 16:9 */
+      background: #000;
+    }
+    #player {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+    }
+    .player-info {
+      padding: 12px 16px;
+      background: var(--bg-panel);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+    .player-meta { display: flex; flex-direction: column; gap: 2px; }
+    .player-title { font-size: 13px; font-weight: 600; color: var(--text); }
+    .player-timestamp { font-size: 11px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+    .live-badge {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 11px; font-weight: 600; color: var(--amber);
+      background: #f59e0b15; border: 1px solid #f59e0b40;
+      border-radius: 20px; padding: 3px 10px;
+      animation: pulse-badge 2s ease-in-out infinite;
+    }
+    .live-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--amber); }
+    @keyframes pulse-badge {
+      0%, 100% { opacity: 1; } 50% { opacity: 0.6; }
+    }
+
+    /* ── RIGHT — Query Panel ─────────────────────────────────────── */
+    .query-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-base);
+      overflow: hidden;
+    }
+
+    /* Search bar */
+    .search-section {
+      padding: 16px;
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .search-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    #query-input {
+      flex: 1;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      font-size: 14px;
+      font-family: inherit;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    #query-input::placeholder { color: var(--text-dim); }
+    #query-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+    #ask-btn {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      border: none; border-radius: var(--radius-sm);
+      padding: 10px 20px;
+      font-size: 14px; font-weight: 600; font-family: inherit;
+      color: #fff; cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      white-space: nowrap;
+    }
+    #ask-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 15px var(--accent-glow); }
+    #ask-btn:active { transform: translateY(0); }
+    #ask-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* Scrollable content area */
+    .content-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+    .content-area::-webkit-scrollbar { width: 5px; }
+    .content-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* Loading spinner */
+    #loading-state {
+      display: none;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    #loading-state.visible { display: flex; }
+    .spinner {
+      width: 20px; height: 20px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { font-size: 13px; color: var(--text-muted); }
+
+    /* Answer card */
+    #answer-card {
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      animation: fadeIn 0.3s ease;
+    }
+    #answer-card.visible { display: flex; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+    .answer-label {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+      text-transform: uppercase; color: var(--accent);
+    }
+    #answer-text {
+      font-size: 14px; line-height: 1.7;
+      color: var(--text);
+      white-space: pre-wrap;
+    }
+
+    /* Complexity badge */
+    .badge-row {
+      display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+    }
+    .badge-pill {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 4px 10px; border-radius: 20px;
+      font-size: 12px; font-weight: 600;
+    }
+    .badge-time  { background: #22c55e18; color: var(--green);  border: 1px solid #22c55e40; }
+    .badge-space { background: #3b82f618; color: var(--blue);   border: 1px solid #3b82f640; }
+    .badge-pattern { background: #a855f718; color: var(--purple); border: 1px solid #a855f740; }
+
+    /* Transcript panel */
+    #transcript-section { display: none; flex-direction: column; gap: 8px; }
+    #transcript-section.visible { display: flex; }
+    .transcript-label {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+      text-transform: uppercase; color: var(--text-muted);
+      display: flex; align-items: center; gap: 6px;
+    }
+    #transcript-panel {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      font-size: 13px; line-height: 1.8;
+      color: var(--text-muted);
+      max-height: 180px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+    #transcript-panel span {
+      transition: background-color 0.15s ease, color 0.15s ease;
+      border-radius: 3px;
+      padding: 1px 2px;
+      cursor: pointer;
+    }
+    #transcript-panel span.active {
+      background: var(--highlight);
+      color: var(--amber);
+      border-left: 2px solid var(--highlight-border);
+      padding-left: 6px;
+    }
+
+    /* Citations */
+    #citations-section { display: none; flex-direction: column; gap: 8px; }
+    #citations-section.visible { display: flex; }
+    .citations-label {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+      text-transform: uppercase; color: var(--text-muted);
+    }
+    #citations-row { display: flex; flex-wrap: wrap; gap: 8px; }
+    .citation-badge {
+      display: flex; flex-direction: column; gap: 3px;
+      padding: 8px 12px;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      cursor: pointer; font-family: inherit;
+      text-align: left; color: var(--text);
+      transition: border-color 0.2s, transform 0.15s, box-shadow 0.15s;
+      max-width: 260px;
+    }
+    .citation-badge:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px var(--accent-glow);
+    }
+    .citation-badge.active { border-color: var(--accent); background: #6366f110; }
+    .cite-title { font-size: 12px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cite-meta { font-size: 11px; color: var(--accent); }
+    .cite-preview { font-size: 11px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* Problem links */
+    #problems-section { display: none; flex-direction: column; gap: 8px; }
+    #problems-section.visible { display: flex; }
+
+    /* Empty state */
+    .empty-state {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 12px; padding: 40px 20px; text-align: center;
+      color: var(--text-dim);
+    }
+    .empty-icon { font-size: 40px; }
+    .empty-title { font-size: 15px; font-weight: 600; color: var(--text-muted); }
+    .empty-sub { font-size: 13px; }
+    .suggestion-chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 8px; }
+    .chip {
+      padding: 6px 12px; border-radius: 20px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      font-size: 12px; color: var(--text-muted); cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .chip:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* Refusal state */
+    .refusal-card {
+      display: flex; align-items: flex-start; gap: 12px;
+      background: #f59e0b0a; border: 1px solid #f59e0b30;
+      border-radius: var(--radius); padding: 14px;
+      animation: fadeIn 0.3s ease;
+    }
+    .refusal-icon { font-size: 20px; flex-shrink: 0; }
+    .refusal-text { font-size: 13px; color: var(--amber); }
+    .refusal-meta { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ──────────────────────────────────────────────────────── -->
+<header>
+  <div class="header-brand">
+    <div class="header-logo">⚡</div>
+    <div>
+      <div class="header-title">DSA TubeRAG</div>
+      <div class="header-sub">Padho with Pratyush · 126 Lectures</div>
+    </div>
+  </div>
+  <div class="header-stats">
+    <div class="stat-pill" id="stat-chunks">
+      <div class="stat-dot"></div>
+      <span>Loading…</span>
+    </div>
+    <div class="stat-pill">
+      <span>bge-m3 · 1024d · Qdrant</span>
+    </div>
+  </div>
+</header>
+
+<!-- ── Main Split ───────────────────────────────────────────────────── -->
+<div class="main">
+
+  <!-- LEFT: YouTube Player -->
+  <div class="player-panel">
+    <div class="player-wrapper">
+      <div id="player"></div>
+    </div>
+    <div class="player-info">
+      <div class="player-meta">
+        <div class="player-title" id="player-title">Select a lecture below ↓</div>
+        <div class="player-timestamp" id="player-ts">00:00:00</div>
+      </div>
+      <div class="live-badge" id="live-badge" style="display:none">
+        <div class="live-dot"></div>
+        LIVE
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Query Panel -->
+  <div class="query-panel">
+
+    <!-- Search bar -->
+    <div class="search-section">
+      <div class="search-row">
+        <input
+          type="text"
+          id="query-input"
+          placeholder="DSA question likhein… e.g. BFS kaise kaam karta hai?"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <button id="ask-btn" onclick="handleAsk()">Ask ⚡</button>
+      </div>
+    </div>
+
+    <!-- Scrollable content -->
+    <div class="content-area" id="content-area">
+
+      <!-- Loading state -->
+      <div id="loading-state">
+        <div class="spinner"></div>
+        <div class="loading-text">Searching 4,140 chunks · Generating answer…</div>
+      </div>
+
+      <!-- Answer card -->
+      <div id="answer-card">
+        <div class="answer-label">Answer</div>
+        <div id="answer-text"></div>
+        <div class="badge-row" id="badge-row"></div>
+      </div>
+
+      <!-- Citations -->
+      <div id="citations-section">
+        <div class="citations-label">📍 Sources — click to jump</div>
+        <div id="citations-row"></div>
+      </div>
+
+      <!-- Active transcript -->
+      <div id="transcript-section">
+        <div class="transcript-label">
+          <span>📝</span>
+          <span>Active Transcript</span>
+          <span id="transcript-ts" style="margin-left:auto;color:var(--accent);font-variant-numeric:tabular-nums"></span>
+        </div>
+        <div id="transcript-panel"></div>
+      </div>
+
+      <!-- Empty state (shown by default) -->
+      <div class="empty-state" id="empty-state">
+        <div class="empty-icon">🎓</div>
+        <div class="empty-title">Ask anything from the DSA playlist</div>
+        <div class="empty-sub">Answers grounded in lecture transcripts · Hinglish · No code</div>
+        <div class="suggestion-chips">
+          <div class="chip" onclick="setQuery('BFS kaise kaam karta hai?')">BFS traversal</div>
+          <div class="chip" onclick="setQuery('Merge sort ka time complexity kya hai?')">Merge sort complexity</div>
+          <div class="chip" onclick="setQuery('Dynamic programming mein memoization kya hota hai?')">DP memoization</div>
+          <div class="chip" onclick="setQuery('Dijkstra algorithm explain karo')">Dijkstra</div>
+          <div class="chip" onclick="setQuery('Trie data structure kya hota hai?')">Trie</div>
+          <div class="chip" onclick="setQuery('Sliding window technique kab use karein?')">Sliding window</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ── Scripts ───────────────────────────────────────────────────────── -->
+<script>
+// ── App State ─────────────────────────────────────────────────────────
+const State = {
+  player: null,
+  currentVideoId: null,
+  activeSegments: [],   // [{start, end, text, el}]
+  syncInterval: null,
+  activeCitationIdx: -1,
+};
+
+// ── YouTube IFrame API ────────────────────────────────────────────────
+const tag = document.createElement('script');
+tag.src = 'https://www.youtube.com/iframe_api';
+document.head.appendChild(tag);
+
+function onYouTubeIframeAPIReady() {
+  State.player = new YT.Player('player', {
+    height: '100%', width: '100%',
+    playerVars: { autoplay: 0, rel: 0, modestbranding: 1, controls: 1 },
+    events: {
+      onStateChange: (e) => {
+        const PLAYING = YT.PlayerState.PLAYING;
+        const PAUSED  = YT.PlayerState.PAUSED;
+        if (e.data === PLAYING) {
+          document.getElementById('live-badge').style.display = 'flex';
+          startSync();
+        } else {
+          document.getElementById('live-badge').style.display = 'none';
+          if (e.data === PAUSED) stopSync();
+        }
+      }
+    }
+  });
+}
+
+function loadVideo(videoId, seekSec) {
+  if (!State.player) return;
+  if (State.currentVideoId !== videoId) {
+    State.currentVideoId = videoId;
+    State.player.loadVideoById({ videoId, startSeconds: seekSec });
+  } else {
+    State.player.seekTo(seekSec, true);
+    State.player.playVideo();
+  }
+}
+
+// ── Transcript Sync ───────────────────────────────────────────────────
+function startSync() {
+  if (State.syncInterval) return;
+  State.syncInterval = setInterval(syncTranscript, 250);
+}
+function stopSync() {
+  clearInterval(State.syncInterval);
+  State.syncInterval = null;
+}
+
+function syncTranscript() {
+  if (!State.player || !State.activeSegments.length) return;
+  const t = State.player.getCurrentTime();
+
+  // Update timestamp display
+  document.getElementById('player-ts').textContent = formatTs(t);
+  document.getElementById('transcript-ts').textContent = formatTs(t);
+
+  State.activeSegments.forEach(seg => {
+    const active = t >= seg.start && t <= seg.end;
+    seg.el.classList.toggle('active', active);
+    if (active) seg.el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  });
+}
+
+function setActiveTranscript(segments) {
+  const panel = document.getElementById('transcript-panel');
+  panel.innerHTML = '';
+  State.activeSegments = [];
+
+  segments.forEach(seg => {
+    const span = document.createElement('span');
+    span.textContent = seg.text + ' ';
+    span.dataset.start = seg.start;
+    span.dataset.end   = seg.end;
+    span.title = formatTs(seg.start);
+    span.onclick = () => {
+      if (State.player) State.player.seekTo(seg.start, true);
+    };
+    panel.appendChild(span);
+    State.activeSegments.push({ ...seg, el: span });
+  });
+
+  document.getElementById('transcript-section').classList.add('visible');
+}
+
+function clearTranscript() {
+  stopSync();
+  State.activeSegments = [];
+  document.getElementById('transcript-panel').innerHTML = '';
+  document.getElementById('transcript-section').classList.remove('visible');
+}
+
+// ── Citation Rendering ────────────────────────────────────────────────
+function renderCitations(citations) {
+  const row = document.getElementById('citations-row');
+  row.innerHTML = '';
+  if (!citations || !citations.length) {
+    document.getElementById('citations-section').classList.remove('visible');
+    return;
+  }
+
+  citations.forEach((c, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'citation-badge';
+    btn.id = `cite-${i}`;
+    btn.innerHTML = `
+      <span class="cite-title" title="${c.title}">${c.title}</span>
+      <span class="cite-meta">📍 ${formatTs(c.start_sec)} · dist ${c.distance.toFixed(3)}</span>
+      <span class="cite-preview">${c.chunk_preview}</span>
+    `;
+    btn.onclick = () => handleCitationClick(c, i);
+    row.appendChild(btn);
+  });
+
+  document.getElementById('citations-section').classList.add('visible');
+
+  // Auto-load first citation
+  if (citations.length > 0) handleCitationClick(citations[0], 0);
+}
+
+function handleCitationClick(citation, idx) {
+  // Update active state on badges
+  document.querySelectorAll('.citation-badge').forEach((b, i) =>
+    b.classList.toggle('active', i === idx)
+  );
+  State.activeCitationIdx = idx;
+
+  // Update player title
+  document.getElementById('player-title').textContent = citation.title;
+
+  // Seek player
+  loadVideo(citation.video_id, citation.seek_sec);
+
+  // Update transcript
+  clearTranscript();
+  if (citation.segments && citation.segments.length) {
+    setActiveTranscript(citation.segments);
+    startSync();
+  }
+
+  // Scroll content area to transcript
+  document.getElementById('transcript-section').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ── Badge Rendering ───────────────────────────────────────────────────
+function renderBadge(badge) {
+  const row = document.getElementById('badge-row');
+  row.innerHTML = '';
+  if (!badge) return;
+  row.innerHTML = `
+    <span class="badge-pill badge-time">⏱ ${badge.time_complexity}</span>
+    <span class="badge-pill badge-space">💾 ${badge.space_complexity}</span>
+    <span class="badge-pill badge-pattern">🔷 ${badge.pattern}</span>
+  `;
+}
+
+// ── Answer Rendering ──────────────────────────────────────────────────
+function renderAnswer(response) {
+  const card = document.getElementById('answer-card');
+  const textEl = document.getElementById('answer-text');
+
+  // Strip badge line from visible text (it's rendered separately)
+  let answerText = response.answer;
+  if (response.complexity_badge) {
+    const b = response.complexity_badge;
+    const badgeStr = `[Time: ${b.time_complexity} | Space: ${b.space_complexity} | Pattern: ${b.pattern}]`;
+    answerText = answerText.replace(badgeStr, '').trim();
+  }
+
+  textEl.textContent = answerText;
+  renderBadge(response.complexity_badge);
+  card.classList.add('visible');
+}
+
+function renderRefusal(response) {
+  const area = document.getElementById('content-area');
+  const existing = area.querySelector('.refusal-card');
+  if (existing) existing.remove();
+
+  const div = document.createElement('div');
+  div.className = 'refusal-card';
+  div.innerHTML = `
+    <div class="refusal-icon">🚫</div>
+    <div>
+      <div class="refusal-text">${response.answer}</div>
+      <div class="refusal-meta">Distance: ${response.retrieval_distance} (threshold: 0.5) · 0 tokens used</div>
+    </div>
+  `;
+  area.insertBefore(div, area.firstChild);
+}
+
+// ── Stats ─────────────────────────────────────────────────────────────
+async function loadStats() {
+  try {
+    const r = await fetch('/api/stats');
+    if (!r.ok) return;
+    const s = await r.json();
+    document.getElementById('stat-chunks').innerHTML = `
+      <div class="stat-dot"></div>
+      <span>${s.total_chunks.toLocaleString()} chunks · ${s.total_videos} videos</span>
+    `;
+  } catch (_) { /* API not running in dev */ }
+}
+
+// ── Main Ask Handler ──────────────────────────────────────────────────
+async function handleAsk() {
+  const input = document.getElementById('query-input');
+  const query = input.value.trim();
+  if (!query) return;
+
+  // Reset UI
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('answer-card').classList.remove('visible');
+  document.getElementById('citations-section').classList.remove('visible');
+  document.getElementById('loading-state').classList.add('visible');
+  document.getElementById('ask-btn').disabled = true;
+  document.querySelectorAll('.refusal-card').forEach(el => el.remove());
+
+  try {
+    const response = await fetch('/api/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, top_k: 5 }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (data.is_refused) {
+      renderRefusal(data);
+    } else {
+      renderAnswer(data);
+      renderCitations(data.citations);
+    }
+  } catch (err) {
+    const div = document.createElement('div');
+    div.className = 'refusal-card';
+    div.innerHTML = `<div class="refusal-icon">⚠️</div><div><div class="refusal-text">Error: ${err.message}</div><div class="refusal-meta">Make sure the API server is running: uv run uvicorn api.main:app --reload</div></div>`;
+    document.getElementById('content-area').insertBefore(div, document.getElementById('content-area').firstChild);
+  } finally {
+    document.getElementById('loading-state').classList.remove('visible');
+    document.getElementById('ask-btn').disabled = false;
+  }
+}
+
+// ── Utilities ─────────────────────────────────────────────────────────
+function formatTs(sec) {
+  const s = Math.floor(sec);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const ss = s % 60;
+  if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+  return `${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+}
+
+function setQuery(text) {
+  document.getElementById('query-input').value = text;
+  document.getElementById('query-input').focus();
+}
+
+// Enter key triggers ask
+document.getElementById('query-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) handleAsk();
+});
+
+// Load stats on boot
+loadStats();
+</script>
+
+<!-- YouTube IFrame API is loaded above via script tag -->
+</body>
+</html>
