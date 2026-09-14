@@ -1,710 +1,1188 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ChronoRag — Interactive DSA Video Intelligence</title>
+  <title>ChronoRag — DSA Video Intelligence</title>
   <meta name="description" content="Timestamp-accurate RAG system for DSA video lectures with real-time synchronized transcript tracking." />
-  
-  <!-- High-resolution SVG Favicon -->
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><linearGradient id='g' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='%236366f1'/><stop offset='100%' stop-color='%23a855f7'/></linearGradient></defs><rect width='32' height='32' rx='8' fill='url(%23g)'/><path d='M18 5L9 17h6l-2 10 9-12h-6l2-10z' fill='white'/></svg>" />
 
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><linearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' stop-color='%23c9a96e'/><stop offset='100%25' stop-color='%23a07845'/></linearGradient></defs><rect width='32' height='32' rx='9' fill='%231a1a1d'/><rect width='32' height='32' rx='9' fill='url(%23g)' opacity='0.15'/><path d='M17.5 6L9 18h6.5l-2 8 10-13h-7l3-7z' fill='url(%23g)'/></svg>" />
+
+  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Inter', 'sans-serif'],
-            mono: ['JetBrains Mono', 'monospace'],
-          },
-          colors: {
-            slate: {
-              850: '#151f32',
-              900: '#0f172a',
-              950: '#080d1a',
-            },
-          },
-        },
-      },
-    }
-  </script>
+
   <style>
-    /* Custom scrollbars */
-    ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
+    /* ─── Design System ────────────────────────────────────────────── */
+    :root {
+      /* Base surfaces */
+      --base:        #111113;
+      --surface:     #18181b;
+      --surface-2:   #1e1e22;
+      --surface-3:   #242428;
+
+      /* Glass layers */
+      --glass-bg:    rgba(255, 255, 255, 0.03);
+      --glass-bg-2:  rgba(255, 255, 255, 0.055);
+      --glass-border:rgba(255, 255, 255, 0.08);
+      --glass-border-strong: rgba(255, 255, 255, 0.14);
+
+      /* Neumorphic shadows */
+      --neu-shadow-out:
+        4px 4px 10px rgba(0,0,0,0.65),
+        -2px -2px 6px rgba(255,255,255,0.04);
+      --neu-shadow-in:
+        inset 3px 3px 8px rgba(0,0,0,0.7),
+        inset -2px -2px 5px rgba(255,255,255,0.04);
+      --neu-shadow-sm:
+        2px 2px 6px rgba(0,0,0,0.55),
+        -1px -1px 4px rgba(255,255,255,0.04);
+
+      /* Accent — warm gold */
+      --accent:      #c9a96e;
+      --accent-dim:  rgba(201,169,110,0.12);
+      --accent-glow: rgba(201,169,110,0.25);
+      --accent-2:    #a07845;
+
+      /* Semantic */
+      --green:       #5cb88a;
+      --blue:        #6ea3c9;
+      --amber:       #c9a96e;
+      --red:         #c97070;
+
+      /* Text */
+      --text:        #e8e8ea;
+      --text-muted:  #9898a6;
+      --text-dim:    #5a5a68;
+
+      --radius:      14px;
+      --radius-sm:   9px;
+      --radius-xs:   6px;
     }
-    ::-webkit-scrollbar-track {
-      background: rgba(15, 23, 42, 0.6);
+
+    /* ─── Reset & Base ─────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--base);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      line-height: 1.6;
     }
+
+    /* ─── Scrollbars ───────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb {
-      background: rgba(51, 65, 85, 0.8);
-      border-radius: 9999px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 99px;
     }
-    ::-webkit-scrollbar-thumb:hover {
-      background: rgba(99, 102, 241, 0.6);
+    ::-webkit-scrollbar-thumb:hover { background: var(--accent-dim); }
+
+    /* ─── Glass Panel Utility ─────────────────────────────────────── */
+    .glass {
+      background: var(--glass-bg);
+      backdrop-filter: blur(16px) saturate(1.4);
+      -webkit-backdrop-filter: blur(16px) saturate(1.4);
+      border: 1px solid var(--glass-border);
+    }
+    .glass-2 {
+      background: var(--glass-bg-2);
+      backdrop-filter: blur(20px) saturate(1.5);
+      -webkit-backdrop-filter: blur(20px) saturate(1.5);
+      border: 1px solid var(--glass-border-strong);
     }
 
-    /* Active sentence highlight transition */
-    .transcript-line {
-      transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    /* ─── Neumorphic Utility ──────────────────────────────────────── */
+    .neu { box-shadow: var(--neu-shadow-out); }
+    .neu-in { box-shadow: var(--neu-shadow-in); }
+    .neu-sm { box-shadow: var(--neu-shadow-sm); }
+
+    /* ─── Animations ──────────────────────────────────────────────── */
+    @keyframes shimmer {
+      0%   { background-position: -200% center; }
+      100% { background-position:  200% center; }
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    @keyframes breathe {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.45; }
     }
 
-    /* Citation badge pulse */
+    .anim-fadein { animation: fadeUp 0.3s ease both; }
+    .spinner { animation: spin 0.8s linear infinite; }
+    .breathe { animation: breathe 2s ease-in-out infinite; }
+
+    /* ─── Header ──────────────────────────────────────────────────── */
+    #app-header {
+      flex-shrink: 0;
+      background: rgba(17,17,19,0.92);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-bottom: 1px solid var(--glass-border);
+      padding: 0 24px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      z-index: 50;
+    }
+
+    /* Brand */
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      flex-shrink: 0;
+    }
+    .brand-icon {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      background: var(--surface-3);
+      box-shadow: var(--neu-shadow-sm);
+      display: flex; align-items: center; justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .brand-icon::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, var(--accent-dim), transparent);
+    }
+    .brand-icon svg { position: relative; z-index: 1; }
+    .brand-name {
+      font-size: 15px; font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+    .brand-sub {
+      font-size: 11px; color: var(--text-dim);
+      font-weight: 400; margin-top: 1px;
+      display: none;
+    }
+    @media (min-width: 640px) { .brand-sub { display: block; } }
+
+    /* Stats Pill */
+    .stats-pill {
+      display: flex; align-items: center; gap: 6px;
+      padding: 5px 12px;
+      border-radius: 99px;
+      background: var(--surface-2);
+      box-shadow: var(--neu-shadow-sm);
+      font-size: 11px; font-weight: 500;
+      color: var(--text-muted);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .status-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+    }
+
+    /* Search */
+    .search-wrap {
+      flex: 1; max-width: 620px;
+      position: relative;
+    }
+    .search-icon {
+      position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
+      color: var(--text-dim); pointer-events: none;
+    }
+    #query-input {
+      width: 100%; height: 38px;
+      background: var(--surface-2);
+      box-shadow: var(--neu-shadow-in);
+      border: 1px solid var(--glass-border);
+      border-radius: 10px;
+      padding: 0 44px 0 38px;
+      font-size: 13px; font-family: inherit;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    #query-input::placeholder { color: var(--text-dim); }
+    #query-input:focus {
+      border-color: rgba(201,169,110,0.4);
+      box-shadow:
+        var(--neu-shadow-in),
+        0 0 0 3px var(--accent-dim);
+    }
+    #spinner-wrap {
+      position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    }
+
+    /* Ask button */
+    #ask-btn {
+      height: 38px; padding: 0 18px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      border: none; cursor: pointer;
+      font-size: 12px; font-weight: 600; font-family: inherit;
+      color: #0e0c09;
+      display: flex; align-items: center; gap: 6px;
+      box-shadow:
+        3px 3px 8px rgba(0,0,0,0.5),
+        -1px -1px 4px rgba(201,169,110,0.1),
+        0 0 14px rgba(201,169,110,0.12);
+      transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    #ask-btn:hover {
+      transform: translateY(-1px);
+      box-shadow:
+        4px 4px 12px rgba(0,0,0,0.5),
+        -1px -1px 4px rgba(201,169,110,0.12),
+        0 0 20px rgba(201,169,110,0.2);
+    }
+    #ask-btn:active { transform: translateY(0); }
+    #ask-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* ─── Answer Banner ───────────────────────────────────────────── */
+    #answer-banner {
+      flex-shrink: 0;
+      display: none;
+      background: rgba(17,17,19,0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--glass-border);
+      padding: 14px 24px;
+      animation: fadeUp 0.25s ease both;
+    }
+    .banner-inner {
+      max-width: 1400px; margin: 0 auto;
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .banner-top-row {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap; gap: 8px;
+    }
+    .banner-label {
+      display: flex; align-items: center; gap: 7px;
+      font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--accent);
+    }
+    .banner-label-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%; background: var(--accent);
+    }
+    #answer-meta {
+      font-size: 11px; font-family: 'JetBrains Mono', monospace;
+      color: var(--text-dim);
+    }
+    /* Complexity pills */
+    .complexity-row {
+      display: flex; flex-wrap: wrap; gap: 6px;
+    }
+    .badge-pill {
+      display: flex; align-items: center; gap: 5px;
+      padding: 4px 10px;
+      border-radius: var(--radius-xs);
+      font-size: 11px; font-family: 'JetBrains Mono', monospace;
+      font-weight: 500;
+      background: var(--surface-2);
+      box-shadow: var(--neu-shadow-sm);
+    }
+    .badge-pill.time   { color: var(--green); border: 1px solid rgba(92,184,138,0.2); }
+    .badge-pill.space  { color: var(--blue);  border: 1px solid rgba(110,163,201,0.2); }
+    .badge-pill.pattern{ color: var(--accent); border: 1px solid rgba(201,169,110,0.2); }
+    .badge-pill svg { opacity: 0.8; }
+
+    /* Answer body text */
+    #answer-body {
+      font-size: 13px; color: var(--text-muted);
+      line-height: 1.7; max-width: 940px;
+    }
+    #answer-body strong { color: var(--text); font-weight: 600; }
+    #answer-body code {
+      background: var(--surface-3); color: var(--accent);
+      padding: 1px 6px; border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+    }
+    #answer-body p { margin-bottom: 4px; }
+    #answer-body .cite-inline {
+      display: inline-flex; align-items: center;
+      padding: 1px 6px; margin: 0 2px;
+      border-radius: 4px;
+      background: var(--accent-dim);
+      border: 1px solid rgba(201,169,110,0.2);
+      color: var(--accent); font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600; cursor: pointer;
+      transition: background 0.15s;
+    }
+    #answer-body .cite-inline:hover { background: var(--accent-glow); }
+
+    /* Citations row */
+    .citations-row {
+      display: flex; align-items: center; gap: 8px;
+      flex-wrap: wrap;
+    }
+    .citations-label {
+      font-size: 11px; color: var(--text-dim);
+      font-weight: 500; flex-shrink: 0;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .cite-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 5px 11px;
+      border-radius: var(--radius-xs);
+      background: var(--surface-2);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--neu-shadow-sm);
+      font-size: 11px; font-weight: 500; font-family: inherit;
+      color: var(--text-muted); cursor: pointer;
+      transition: border-color 0.15s, color 0.15s, box-shadow 0.15s;
+      max-width: 220px;
+    }
     .cite-btn:hover {
-      box-shadow: 0 0 12px rgba(99, 102, 241, 0.45);
+      border-color: rgba(201,169,110,0.35);
+      color: var(--accent);
+    }
+    .cite-btn.active {
+      background: var(--surface-3);
+      border-color: rgba(201,169,110,0.5);
+      color: var(--accent);
+      box-shadow:
+        var(--neu-shadow-sm),
+        0 0 10px rgba(201,169,110,0.12);
+    }
+    .cite-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px; font-weight: 700;
+      color: var(--accent);
+    }
+    .cite-title {
+      overflow: hidden; text-overflow: ellipsis;
+      white-space: nowrap; max-width: 140px;
+    }
+    .cite-ts {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px; color: var(--text-dim);
+      flex-shrink: 0;
+    }
+
+    /* ─── Refusal Banner ──────────────────────────────────────────── */
+    #refusal-banner {
+      flex-shrink: 0;
+      display: none;
+      background: rgba(201,112,112,0.05);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(201,112,112,0.15);
+      padding: 12px 24px;
+      animation: fadeUp 0.25s ease both;
+    }
+    .refusal-inner {
+      max-width: 1400px; margin: 0 auto;
+      display: flex; align-items: flex-start; gap: 10px;
+    }
+    .refusal-icon-wrap {
+      width: 32px; height: 32px; flex-shrink: 0;
+      border-radius: 8px;
+      background: rgba(201,112,112,0.08);
+      border: 1px solid rgba(201,112,112,0.2);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--red);
+    }
+    .refusal-title { font-size: 13px; font-weight: 600; color: #d8a4a4; }
+    .refusal-sub   { font-size: 11px; color: rgba(201,112,112,0.7); margin-top: 2px; }
+    #refusal-meta  { font-size: 10px; font-family: 'JetBrains Mono', monospace; color: rgba(201,112,112,0.45); margin-top: 4px; }
+
+    /* ─── Main Split Workspace ────────────────────────────────────── */
+    #workspace {
+      flex: 1; display: flex; overflow: hidden;
+      min-height: 0;
+    }
+
+    /* ─── Left: Player Panel ──────────────────────────────────────── */
+    #player-panel {
+      flex: 0 0 57%;
+      display: flex; flex-direction: column;
+      background: var(--base);
+      border-right: 1px solid var(--glass-border);
+      overflow-y: auto; padding: 20px;
+      gap: 16px;
+    }
+
+    .video-shell {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--surface);
+      position: relative;
+      box-shadow:
+        0 0 0 1px var(--glass-border),
+        6px 6px 20px rgba(0,0,0,0.65),
+        -2px -2px 8px rgba(255,255,255,0.03);
+    }
+    #player { width: 100%; height: 100%; }
+
+    /* Placeholder overlay */
+    #player-placeholder {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center; gap: 10px;
+      background: var(--surface);
+      transition: opacity 0.3s;
+      z-index: 5;
+    }
+    .placeholder-icon {
+      width: 52px; height: 52px;
+      border-radius: 13px;
+      background: var(--surface-3);
+      box-shadow: var(--neu-shadow-sm);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-dim);
+    }
+    .placeholder-title { font-size: 14px; font-weight: 600; color: var(--text-muted); }
+    .placeholder-sub   { font-size: 12px; color: var(--text-dim); max-width: 260px; }
+
+    /* Video meta bar */
+    .video-meta-bar {
+      display: flex; align-items: center;
+      justify-content: space-between; gap: 12px;
+    }
+    .video-title {
+      font-size: 13px; font-weight: 600;
+      color: var(--text); flex: 1; min-width: 0;
+      overflow: hidden; text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .video-ts-wrap {
+      display: flex; align-items: center; gap: 8px;
+      flex-shrink: 0;
+    }
+    #video-ts {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px; color: var(--accent);
+      background: var(--surface-2);
+      padding: 3px 9px; border-radius: var(--radius-xs);
+      box-shadow: var(--neu-shadow-sm);
+    }
+    #sync-badge {
+      display: none; align-items: center; gap: 5px;
+      padding: 3px 9px; border-radius: 99px;
+      background: rgba(201,112,112,0.1);
+      border: 1px solid rgba(201,112,112,0.2);
+      font-size: 10px; font-weight: 600;
+      color: var(--red); text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    /* Suggestion chips */
+    .suggestions-section {
+      border-top: 1px solid var(--glass-border);
+      padding-top: 16px;
+    }
+    .suggestions-label {
+      font-size: 10px; font-weight: 600; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--text-dim);
+      margin-bottom: 10px;
+    }
+    .chips-row { display: flex; flex-wrap: wrap; gap: 7px; }
+    .chip {
+      padding: 6px 13px;
+      border-radius: var(--radius-xs);
+      background: var(--surface-2);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--neu-shadow-sm);
+      font-size: 11px; font-weight: 500; font-family: inherit;
+      color: var(--text-muted); cursor: pointer;
+      transition: border-color 0.15s, color 0.15s, box-shadow 0.15s;
+    }
+    .chip:hover {
+      border-color: rgba(201,169,110,0.3);
+      color: var(--accent);
+      box-shadow:
+        var(--neu-shadow-sm),
+        0 0 8px rgba(201,169,110,0.08);
+    }
+    .chip.warn { color: rgba(201,112,112,0.7); }
+    .chip.warn:hover { border-color: rgba(201,112,112,0.3); color: var(--red); }
+
+    /* ─── Right: Transcript Panel ────────────────────────────────── */
+    #transcript-panel {
+      flex: 0 0 43%;
+      display: flex; flex-direction: column;
+      background: var(--surface);
+      overflow: hidden;
+    }
+
+    .transcript-header {
+      flex-shrink: 0;
+      padding: 13px 20px;
+      border-bottom: 1px solid var(--glass-border);
+      background: rgba(17,17,19,0.6);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      display: flex; align-items: center;
+      justify-content: space-between; gap: 8px;
+    }
+    .transcript-header-left {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .transcript-icon {
+      width: 28px; height: 28px;
+      border-radius: 7px;
+      background: var(--surface-3);
+      box-shadow: var(--neu-shadow-sm);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-dim); flex-shrink: 0;
+    }
+    .transcript-title {
+      font-size: 12px; font-weight: 600; color: var(--text);
+    }
+    #line-count-badge {
+      padding: 2px 8px; border-radius: 99px;
+      background: var(--surface-3);
+      font-size: 10px; font-family: 'JetBrains Mono', monospace;
+      color: var(--text-dim);
+    }
+    .transcript-hint {
+      font-size: 10px; color: var(--text-dim);
+      display: flex; align-items: center; gap: 4px;
+    }
+
+    /* Transcript body */
+    #transcript-body {
+      flex: 1; overflow-y: auto;
+      padding: 14px;
+      display: flex; flex-direction: column; gap: 4px;
+    }
+
+    /* Placeholder */
+    .transcript-empty {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center; gap: 8px; padding: 24px;
+      color: var(--text-dim);
+    }
+    .trans-empty-icon {
+      width: 44px; height: 44px;
+      border-radius: 11px;
+      background: var(--surface-2);
+      box-shadow: var(--neu-shadow-sm);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-dim); margin-bottom: 4px;
+    }
+
+    /* Transcript lines */
+    .t-line {
+      display: flex; align-items: flex-start;
+      gap: 8px; padding: 9px 11px;
+      border-radius: var(--radius-sm);
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: background 0.12s, border-color 0.12s, color 0.12s;
+      background: transparent;
+    }
+    .t-line:hover {
+      background: var(--glass-bg);
+      border-color: var(--glass-border);
+    }
+    .t-line.active {
+      background: var(--glass-bg-2);
+      border-color: rgba(201,169,110,0.25);
+      box-shadow:
+        inset 2px 2px 5px rgba(0,0,0,0.35),
+        inset -1px -1px 3px rgba(255,255,255,0.03),
+        0 0 12px rgba(201,169,110,0.06);
+    }
+    .t-line-play {
+      width: 16px; flex-shrink: 0; margin-top: 2px;
+      color: var(--text-dim); transition: color 0.12s;
+    }
+    .t-line.active .t-line-play { color: var(--accent); }
+    .t-line-text {
+      flex: 1; font-size: 12px; line-height: 1.65;
+      color: var(--text-muted); transition: color 0.12s;
+    }
+    .t-line.active .t-line-text { color: var(--text); }
+    .t-line-ts {
+      flex-shrink: 0;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px; color: var(--text-dim);
+      background: var(--surface-3);
+      padding: 2px 7px; border-radius: 4px;
+      margin-top: 2px;
+      transition: color 0.12s, background 0.12s;
+    }
+    .t-line.active .t-line-ts {
+      color: var(--accent); background: var(--accent-dim);
+    }
+
+    /* ─── Shared Utilities ────────────────────────────────────────── */
+    .hidden { display: none !important; }
+
+    /* Section divider */
+    .divider {
+      height: 1px; width: 100%;
+      background: linear-gradient(to right, transparent, var(--glass-border), transparent);
+    }
+
+    /* Spinner */
+    .spin-ring {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(201,169,110,0.25);
+      border-top-color: var(--accent);
+      border-radius: 50%;
     }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 font-sans h-screen flex flex-col overflow-hidden antialiased selection:bg-indigo-500/30 selection:text-indigo-200">
 
-  <!-- ── 1. Top Bar / Header ─────────────────────────────────────────── -->
-  <header class="bg-slate-900/90 backdrop-blur border-b border-slate-800 px-6 py-3 flex-shrink-0 z-30">
-    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
-      <!-- Brand -->
-      <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
-        <div class="flex items-center gap-2.5">
-          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/25 ring-1 ring-white/10 text-white">
-            <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
-              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-            </svg>
-          </div>
-          <div>
-            <div class="flex items-center gap-2">
-              <span class="font-bold text-base tracking-tight text-white">ChronoRag</span>
-            </div>
-            <p class="text-xs text-slate-400 hidden sm:block">Timestamp-Accurate DSA Video Intelligence · 126 Lectures</p>
-          </div>
-        </div>
+<body>
 
-        <div id="stat-pill" class="flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800/80 border border-slate-700/60 text-xs text-slate-300 font-medium">
-          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span id="stat-text">4,140 chunks · 126 videos</span>
-        </div>
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!-- 1. TOP HEADER BAR                                             -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <header id="app-header">
+
+    <!-- Brand -->
+    <div class="brand">
+      <div class="brand-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"
+                fill="#c9a96e" stroke="#c9a96e" stroke-width="0.5"
+                stroke-linejoin="round"/>
+        </svg>
       </div>
-
-      <!-- Search Input Section -->
-      <div class="w-full md:max-w-2xl flex items-center gap-2">
-        <div class="relative flex-1">
-          <div class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </div>
-          <input
-            type="text"
-            id="query-input"
-            placeholder="Ask anything about DSA... (e.g. 'binary search algorithm' or 'LCS memoization')"
-            class="w-full bg-slate-850/90 border border-slate-700/70 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-slate-100 placeholder-slate-400 text-sm rounded-xl pl-10 pr-10 py-2.5 outline-none transition shadow-inner font-medium"
-            autocomplete="off"
-            spellcheck="false"
-          />
-          <div id="input-loading-spinner" class="hidden absolute right-3 top-1/2 -translate-y-1/2">
-            <svg class="animate-spin h-4 w-4 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-            </svg>
-          </div>
-        </div>
-        <button
-          id="ask-btn"
-          onclick="handleAsk()"
-          class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-purple-600 text-white font-semibold text-sm shadow-lg shadow-indigo-600/30 transition hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center gap-1.5 flex-shrink-0"
-        >
-          <span>Ask</span>
-          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
-            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-          </svg>
-        </button>
+      <div>
+        <div class="brand-name">ChronoRag</div>
+        <div class="brand-sub">Timestamp-Accurate DSA Intelligence · 126 Lectures</div>
       </div>
+    </div>
+
+    <!-- Search -->
+    <div class="search-wrap">
+      <span class="search-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+      </span>
+      <input
+        id="query-input"
+        type="text"
+        placeholder="Ask a DSA question… (e.g. binary search, LCS memoization, Dijkstra)"
+        autocomplete="off"
+        spellcheck="false"
+      />
+      <div id="spinner-wrap" class="hidden">
+        <div class="spin-ring spinner"></div>
+      </div>
+    </div>
+
+    <!-- Right side: Ask button + Stats -->
+    <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+      <div class="stats-pill">
+        <span class="status-dot breathe"></span>
+        <span id="stat-text">4,140 chunks · 126 videos</span>
+      </div>
+      <button id="ask-btn" onclick="handleAsk()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+        </svg>
+        <span>Ask</span>
+      </button>
     </div>
   </header>
 
-  <!-- ── 2. Answer & Complexity Banner (Collapsible / Top Section) ──── -->
-  <section id="answer-banner" class="hidden bg-slate-900 border-b border-slate-800 px-6 py-4 flex-shrink-0 shadow-md">
-    <div class="max-w-7xl mx-auto space-y-3">
-      <!-- Top Row: Label, Complexity Badges, Latency -->
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <div class="flex items-center gap-2">
-          <span class="text-xs font-semibold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5 bg-indigo-500/10 px-2.5 py-1 rounded-md border border-indigo-500/20">
-            <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
-              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-            </svg>
-            <span>Concept Summary</span>
-          </span>
-          <span id="answer-meta" class="text-xs text-slate-400 font-mono"></span>
-        </div>
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!-- 2. ANSWER BANNER                                              -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <div id="answer-banner">
+    <div class="banner-inner">
 
-        <!-- Complexity Badge Pills -->
-        <div id="complexity-container" class="flex flex-wrap items-center gap-2 text-xs font-mono font-medium">
-          <!-- Populated dynamically with clean SVG tags -->
+      <!-- Top row: label + complexity + meta -->
+      <div class="banner-top-row">
+        <div class="banner-label">
+          <span class="banner-label-dot"></span>
+          Concept Summary
         </div>
+        <div id="complexity-row" class="complexity-row"></div>
+        <span id="answer-meta"></span>
       </div>
 
-      <!-- Main Explanation Body -->
-      <div id="answer-body" class="text-sm text-slate-200 leading-relaxed max-w-5xl space-y-2">
-        <!-- Rendered summary paragraphs and inline buttons -->
-      </div>
+      <!-- Answer body -->
+      <div id="answer-body"></div>
 
-      <!-- Referenced Citations Row -->
-      <div class="flex items-center gap-2 pt-1">
-        <span class="text-xs font-semibold text-slate-400 flex items-center gap-1.5 flex-shrink-0">
-          <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+      <!-- Citations row -->
+      <div class="citations-row">
+        <div class="citations-label">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
           </svg>
-          <span>Referenced Lectures:</span>
-        </span>
-        <div id="citations-list" class="flex flex-wrap gap-2">
-          <!-- Citation buttons -->
+          Sources:
         </div>
+        <div id="citations-list"></div>
       </div>
-    </div>
-  </section>
 
-  <!-- ── 3. Refusal Banner (Shown only when out-of-syllabus query occurs) ── -->
-  <section id="refusal-banner" class="hidden bg-amber-950/40 border-b border-amber-800/50 px-6 py-4 flex-shrink-0">
-    <div class="max-w-4xl mx-auto flex items-start gap-3 text-amber-200">
-      <div class="p-1.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 mt-0.5">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!-- 3. REFUSAL BANNER                                             -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <div id="refusal-banner">
+    <div class="refusal-inner">
+      <div class="refusal-icon-wrap">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M4.93 4.93l14.14 14.14"/>
         </svg>
       </div>
-      <div class="space-y-1">
-        <h4 class="font-semibold text-sm tracking-wide text-amber-300" id="refusal-title">Ye topic in lectures me cover nahi hua.</h4>
-        <p class="text-xs text-amber-300/80 leading-relaxed" id="refusal-desc">
-          This question is outside the scope of the DSA video playlist. The refusal guard stopped the request before invoking the LLM, spending zero tokens.
-        </p>
-        <div id="refusal-meta" class="text-[11px] font-mono text-amber-400/60 pt-1"></div>
+      <div>
+        <div class="refusal-title" id="refusal-title">Ye topic in lectures me cover nahi hua.</div>
+        <div class="refusal-sub">This query is outside the DSA playlist scope — 0 tokens consumed.</div>
+        <div id="refusal-meta"></div>
       </div>
     </div>
-  </section>
+  </div>
 
-  <!-- ── 4. Main Workspace (Split Screen: Player 55% + Synchronized Transcript 45%) ── -->
-  <main class="flex-1 flex overflow-hidden">
-    <!-- Left Panel: YouTube Embedded Player (55% width) -->
-    <div id="player-column" class="w-full lg:w-[55%] flex flex-col border-r border-slate-800 bg-slate-950/60 p-4 lg:p-6 overflow-y-auto">
-      <div class="flex-1 flex flex-col justify-center max-w-4xl mx-auto w-full">
-        <!-- Video Container (16:9 Aspect Ratio) -->
-        <div class="relative w-full aspect-video rounded-2xl overflow-hidden bg-slate-900 border border-slate-800 shadow-2xl ring-1 ring-white/5">
-          <div id="player-container" class="w-full h-full">
-            <div id="player" class="w-full h-full"></div>
-          </div>
-          <!-- Player Overlay / Empty placeholder before first search -->
-          <div id="player-placeholder" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-slate-900/95 z-10 transition-opacity duration-300">
-            <div class="w-14 h-14 rounded-2xl bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center mb-3 text-indigo-400">
-              <svg class="w-6 h-6 fill-current translate-x-0.5" viewBox="0 0 24 24">
-                <path d="M8 5v14l11-7z" />
-              </svg>
-            </div>
-            <h3 class="text-base font-semibold text-slate-200">No Lecture Selected</h3>
-            <p class="text-xs text-slate-400 max-w-sm mt-1">
-              Ask a question above or click any suggested query below to stream the video directly to the spoken timestamp.
-            </p>
-          </div>
-        </div>
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!-- 4. MAIN WORKSPACE                                             -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <div id="workspace">
 
-        <!-- Active Video Metadata Bar -->
-        <div class="mt-4 flex items-center justify-between gap-4 px-1">
-          <div class="min-w-0">
-            <h3 id="active-video-title" class="text-sm font-semibold text-slate-200 truncate">
-              Ready for DSA query
-            </h3>
-            <p id="active-video-sub" class="text-xs text-slate-400 flex items-center gap-2 mt-0.5">
-              <span>Timestamp deep-linked</span>
-              <span>·</span>
-              <span id="active-video-ts" class="font-mono text-indigo-300">00:00:00</span>
-            </p>
-          </div>
-          <div id="live-indicator" class="hidden items-center gap-2 px-2.5 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-[11px] font-semibold text-rose-400 uppercase tracking-wider">
-            <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
-            Syncing
-          </div>
-        </div>
+    <!-- ── Left Panel: Video Player ─────────────────────────────── -->
+    <div id="player-panel">
 
-        <!-- Suggestion Chips -->
-        <div id="suggestions-box" class="mt-8 border-t border-slate-800/80 pt-6">
-          <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Popular DSA Topics to Explore:</p>
-          <div class="flex flex-wrap gap-2">
-            <button onclick="setQuery('what is binary search algorithm')" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-indigo-500/50 text-xs text-slate-300 hover:text-indigo-300 transition flex items-center gap-1.5">
-              <span>Binary Search Algorithm</span>
-            </button>
-            <button onclick="setQuery('LCS table initialization kaise karein?')" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-indigo-500/50 text-xs text-slate-300 hover:text-indigo-300 transition flex items-center gap-1.5">
-              <span>LCS Table Initialization</span>
-            </button>
-            <button onclick="setQuery('Dijkstra algorithm shortest path')" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-indigo-500/50 text-xs text-slate-300 hover:text-indigo-300 transition flex items-center gap-1.5">
-              <span>Dijkstra Algorithm</span>
-            </button>
-            <button onclick="setQuery('sliding window maximum')" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-indigo-500/50 text-xs text-slate-300 hover:text-indigo-300 transition flex items-center gap-1.5">
-              <span>Sliding Window Maximum</span>
-            </button>
-            <button onclick="setQuery('React hooks useEffect kaise kaam karta hai?')" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-amber-500/50 text-xs text-slate-400 hover:text-amber-300 transition flex items-center gap-1.5">
-              <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-              <span>React useEffect (Refusal Test)</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Right Panel: Synchronized Transcript (45% width) -->
-    <div class="hidden lg:flex w-[45%] flex-col bg-slate-900/50 backdrop-blur">
-      <!-- Transcript Header -->
-      <div class="px-6 py-3.5 border-b border-slate-800 flex items-center justify-between bg-slate-900/80 flex-shrink-0">
-        <div class="flex items-center gap-2">
-          <span class="text-sm font-semibold text-slate-200">Synchronized Transcript</span>
-          <span id="transcript-count-badge" class="text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-800 text-slate-400 border border-slate-700">0 lines</span>
-        </div>
-        <div class="text-xs text-slate-400 flex items-center gap-1.5">
-          <span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
-          <span>Click any line to seek</span>
-        </div>
-      </div>
-
-      <!-- Transcript Sentences Container (Auto-scrollable) -->
-      <div id="transcript-container" class="flex-1 overflow-y-auto p-6 space-y-2.5 relative">
-        <div id="transcript-placeholder" class="h-full flex flex-col items-center justify-center text-center p-8 text-slate-500">
-          <div class="w-12 h-12 rounded-2xl bg-slate-800/60 border border-slate-700/60 flex items-center justify-center mb-3 text-slate-400">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      <!-- Video shell -->
+      <div class="video-shell">
+        <div id="player"></div>
+        <div id="player-placeholder">
+          <div class="placeholder-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="5 3 19 12 5 21 5 3"/>
             </svg>
           </div>
-          <p class="text-sm font-medium text-slate-400">No Transcript Loaded</p>
-          <p class="text-xs text-slate-500 max-w-xs mt-1">
-            When you run a search, the 75-second spoken transcript sentences will sync here in real time as the video plays.
-          </p>
+          <div class="placeholder-title">No Lecture Selected</div>
+          <div class="placeholder-sub">Ask a DSA question above to stream the video directly to the spoken timestamp.</div>
         </div>
       </div>
-    </div>
-  </main>
 
-  <!-- ── 5. Client Application & Synchronization Scripts ─────────────── -->
+      <!-- Video meta bar -->
+      <div class="video-meta-bar">
+        <div class="video-title" id="video-title">Ready for a DSA query</div>
+        <div class="video-ts-wrap">
+          <div id="sync-badge">
+            <svg width="6" height="6" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" fill="#c97070"/></svg>
+            Live
+          </div>
+          <div id="video-ts">00:00</div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Suggestion chips -->
+      <div class="suggestions-section">
+        <div class="suggestions-label">Popular topics</div>
+        <div class="chips-row">
+          <button class="chip" onclick="setQuery('binary search algorithm')">Binary Search</button>
+          <button class="chip" onclick="setQuery('LCS table initialization kaise karein?')">LCS Table Init</button>
+          <button class="chip" onclick="setQuery('Dijkstra algorithm shortest path')">Dijkstra</button>
+          <button class="chip" onclick="setQuery('two pointer approach arrays')">Two Pointer</button>
+          <button class="chip" onclick="setQuery('sliding window maximum')">Sliding Window</button>
+          <button class="chip" onclick="setQuery('merge sort time complexity')">Merge Sort</button>
+          <button class="chip warn" onclick="setQuery('React hooks useEffect kaise kaam karta hai?')">React useEffect ← Refusal Demo</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── Right Panel: Synchronized Transcript ──────────────────── -->
+    <div id="transcript-panel">
+
+      <!-- Header -->
+      <div class="transcript-header">
+        <div class="transcript-header-left">
+          <div class="transcript-icon">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+              <polyline points="10 9 9 9 8 9"/>
+            </svg>
+          </div>
+          <span class="transcript-title">Synchronized Transcript</span>
+          <span id="line-count-badge">0 lines</span>
+        </div>
+        <div class="transcript-hint">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M15 15l-5-5m0 0l5-5m-5 5h12.5"/>
+          </svg>
+          Click any line to seek
+        </div>
+      </div>
+
+      <!-- Body -->
+      <div id="transcript-body">
+        <div class="transcript-empty">
+          <div class="trans-empty-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+          </div>
+          <div style="font-size:13px;font-weight:600;color:var(--text-muted)">No Transcript Loaded</div>
+          <div style="font-size:11px;color:var(--text-dim);max-width:220px">
+            Run a search above. The 75-second spoken chunk will sync here in real time as the video plays.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /#workspace -->
+
+
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!-- 5. SCRIPTS                                                    -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
   <script>
-    // ── Application State ─────────────────────────────────────────────
-    const AppState = {
+    /* ── State ──────────────────────────────────────────────────── */
+    const S = {
       player: null,
       playerReady: false,
       currentVideoId: null,
-      activeCitation: null,
       activeSegments: [],
       syncTimer: null,
-      activeSegmentIndex: -1,
-      lastAnswerData: null,
+      activeSegIdx: -1,
+      lastData: null,
     };
 
-    // ── Load YouTube IFrame API ───────────────────────────────────────
-    const ytScript = document.createElement('script');
-    ytScript.src = 'https://www.youtube.com/iframe_api';
-    document.head.appendChild(ytScript);
+    /* ── YouTube IFrame API ─────────────────────────────────────── */
+    const ytTag = document.createElement('script');
+    ytTag.src = 'https://www.youtube.com/iframe_api';
+    document.head.appendChild(ytTag);
 
     function onYouTubeIframeAPIReady() {
-      AppState.player = new YT.Player('player', {
-        height: '100%',
-        width: '100%',
-        playerVars: {
-          autoplay: 1,
-          rel: 0,
-          modestbranding: 1,
-          controls: 1,
-          origin: window.location.origin,
-        },
+      S.player = new YT.Player('player', {
+        height: '100%', width: '100%',
+        playerVars: { autoplay: 1, rel: 0, modestbranding: 1, controls: 1, origin: window.location.origin },
         events: {
-          onReady: () => {
-            AppState.playerReady = true;
-          },
-          onStateChange: onPlayerStateChange,
+          onReady: () => { S.playerReady = true; },
+          onStateChange: onStateChange,
         },
       });
     }
 
-    function onPlayerStateChange(event) {
-      const liveBadge = document.getElementById('live-indicator');
-      if (event.data === YT.PlayerState.PLAYING) {
-        liveBadge.classList.remove('hidden');
-        liveBadge.classList.add('flex');
-        startLiveSync();
+    function onStateChange(e) {
+      const badge = document.getElementById('sync-badge');
+      if (e.data === YT.PlayerState.PLAYING) {
+        badge.style.display = 'flex';
+        startSync();
       } else {
-        liveBadge.classList.add('hidden');
-        liveBadge.classList.remove('flex');
-        if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
-          stopLiveSync();
-        }
+        badge.style.display = 'none';
+        if (e.data === YT.PlayerState.PAUSED || e.data === YT.PlayerState.ENDED) stopSync();
       }
     }
 
-    // ── Video Loading & Seeking ───────────────────────────────────────
+    /* ── Player Control ─────────────────────────────────────────── */
     function playLecture(videoId, seekSec, title) {
-      const placeholder = document.getElementById('player-placeholder');
-      if (placeholder) placeholder.style.display = 'none';
+      const ph = document.getElementById('player-placeholder');
+      if (ph) ph.style.display = 'none';
+      document.getElementById('video-title').textContent = title || 'Playing…';
+      document.getElementById('video-ts').textContent = fmtSec(seekSec);
 
-      document.getElementById('active-video-title').textContent = title || 'Lecture Playing';
-      document.getElementById('active-video-ts').textContent = formatSeconds(seekSec);
-
-      if (!AppState.player || !AppState.playerReady) {
+      if (!S.player || !S.playerReady) {
         setTimeout(() => playLecture(videoId, seekSec, title), 300);
         return;
       }
-
-      if (AppState.currentVideoId !== videoId) {
-        AppState.currentVideoId = videoId;
-        AppState.player.loadVideoById({
-          videoId: videoId,
-          startSeconds: Math.max(0, seekSec),
-        });
+      if (S.currentVideoId !== videoId) {
+        S.currentVideoId = videoId;
+        S.player.loadVideoById({ videoId, startSeconds: Math.max(0, seekSec) });
       } else {
-        AppState.player.seekTo(Math.max(0, seekSec), true);
-        AppState.player.playVideo();
+        S.player.seekTo(Math.max(0, seekSec), true);
+        S.player.playVideo();
       }
     }
 
-    // ── Live Transcript Synchronization (250ms interval) ─────────────
-    function startLiveSync() {
-      if (AppState.syncTimer) return;
-      AppState.syncTimer = setInterval(syncActiveTranscriptLine, 250);
+    /* ── Live Sync ──────────────────────────────────────────────── */
+    function startSync() {
+      if (S.syncTimer) return;
+      S.syncTimer = setInterval(syncLine, 250);
     }
+    function stopSync() {
+      clearInterval(S.syncTimer);
+      S.syncTimer = null;
+    }
+    function syncLine() {
+      if (!S.player || !S.playerReady) return;
+      if (typeof S.player.getCurrentTime !== 'function') return;
+      const t = S.player.getCurrentTime();
+      document.getElementById('video-ts').textContent = fmtSec(t);
+      if (!S.activeSegments.length) return;
 
-    function stopLiveSync() {
-      if (AppState.syncTimer) {
-        clearInterval(AppState.syncTimer);
-        AppState.syncTimer = null;
+      let idx = -1;
+      for (let i = 0; i < S.activeSegments.length; i++) {
+        const seg = S.activeSegments[i];
+        if (t >= seg.start && t <= seg.end + 0.3) { idx = i; break; }
       }
-    }
-
-    function syncActiveTranscriptLine() {
-      if (!AppState.player || !AppState.playerReady) return;
-      if (typeof AppState.player.getCurrentTime !== 'function') return;
-
-      const currentTime = AppState.player.getCurrentTime();
-      document.getElementById('active-video-ts').textContent = formatSeconds(currentTime);
-
-      if (!AppState.activeSegments || AppState.activeSegments.length === 0) return;
-
-      // Find the segment matching current time
-      let matchedIdx = -1;
-      for (let i = 0; i < AppState.activeSegments.length; i++) {
-        const seg = AppState.activeSegments[i];
-        if (currentTime >= seg.start && currentTime <= (seg.end + 0.3)) {
-          matchedIdx = i;
-          break;
+      if (idx === -1) {
+        for (let i = S.activeSegments.length - 1; i >= 0; i--) {
+          if (t >= S.activeSegments[i].start) { idx = i; break; }
         }
       }
-
-      if (matchedIdx === -1) {
-        for (let i = AppState.activeSegments.length - 1; i >= 0; i--) {
-          if (currentTime >= AppState.activeSegments[i].start) {
-            matchedIdx = i;
-            break;
-          }
-        }
-      }
-
-      if (matchedIdx !== -1 && matchedIdx !== AppState.activeSegmentIndex) {
-        highlightSegment(matchedIdx);
-      }
+      if (idx !== -1 && idx !== S.activeSegIdx) activateLine(idx);
     }
 
-    function highlightSegment(index) {
-      AppState.activeSegmentIndex = index;
-      const allLines = document.querySelectorAll('.transcript-line');
-
-      allLines.forEach((line, idx) => {
-        if (idx === index) {
-          line.className = 'transcript-line block p-3.5 rounded-xl border border-indigo-500/40 bg-indigo-950/70 text-indigo-100 shadow-md shadow-indigo-950/50 cursor-pointer text-sm font-medium';
-          const indicator = line.querySelector('.line-indicator');
-          if (indicator) indicator.className = 'line-indicator text-indigo-400 font-bold';
-          line.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        } else {
-          line.className = 'transcript-line block p-3 rounded-xl border border-slate-850 hover:border-slate-700 bg-slate-900/60 hover:bg-slate-850/80 text-slate-300 hover:text-slate-100 cursor-pointer text-sm';
-          const indicator = line.querySelector('.line-indicator');
-          if (indicator) indicator.className = 'line-indicator text-slate-500';
-        }
+    function activateLine(idx) {
+      S.activeSegIdx = idx;
+      document.querySelectorAll('.t-line').forEach((el, i) => {
+        el.classList.toggle('active', i === idx);
+        if (i === idx) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       });
     }
 
-    // ── Render Transcript in Right Panel ──────────────────────────────
+    /* ── Render Transcript ──────────────────────────────────────── */
     function renderTranscript(segments, seekSec) {
-      const container = document.getElementById('transcript-container');
-      const badge = document.getElementById('transcript-count-badge');
-      AppState.activeSegments = segments || [];
-      AppState.activeSegmentIndex = -1;
+      const body = document.getElementById('transcript-body');
+      const badge = document.getElementById('line-count-badge');
+      S.activeSegments = segments || [];
+      S.activeSegIdx = -1;
 
-      if (!segments || segments.length === 0) {
-        container.innerHTML = `
-          <div class="h-full flex flex-col items-center justify-center text-center p-8 text-slate-500">
-            <div class="w-12 h-12 rounded-2xl bg-slate-800/60 border border-slate-700/60 flex items-center justify-center mb-3 text-slate-400">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      if (!segments || !segments.length) {
+        body.innerHTML = `
+          <div class="transcript-empty">
+            <div class="trans-empty-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
               </svg>
             </div>
-            <p class="text-sm font-medium text-slate-400">No Sentences Available</p>
-            <p class="text-xs text-slate-500 max-w-xs mt-1">This chunk contains no segment timestamps.</p>
-          </div>
-        `;
+            <div style="font-size:13px;font-weight:600;color:var(--text-muted)">No Sentences Available</div>
+            <div style="font-size:11px;color:var(--text-dim)">This chunk has no segment timestamps.</div>
+          </div>`;
         badge.textContent = '0 lines';
         return;
       }
 
       badge.textContent = `${segments.length} lines`;
-      container.innerHTML = '';
+      body.innerHTML = '';
 
       segments.forEach((seg, idx) => {
-        const lineEl = document.createElement('div');
-        lineEl.className = 'transcript-line block p-3 rounded-xl border border-slate-850 hover:border-slate-700 bg-slate-900/60 hover:bg-slate-850/80 text-slate-300 hover:text-slate-100 cursor-pointer text-sm';
-        lineEl.id = `trans-line-${idx}`;
-
-        lineEl.innerHTML = `
-          <div class="flex items-start justify-between gap-3">
-            <div class="flex items-start gap-2 flex-1">
-              <span class="line-indicator text-slate-500 font-mono text-xs mt-0.5 select-none">
-                <svg class="w-3.5 h-3.5 fill-current inline-block" viewBox="0 0 24 24">
-                  <path d="M8 5v14l11-7z"/>
-                </svg>
-              </span>
-              <p class="leading-relaxed">${escapeHtml(seg.text)}</p>
-            </div>
-            <span class="font-mono text-xs px-2 py-0.5 rounded bg-slate-950/80 border border-slate-800 text-slate-400 select-none flex-shrink-0">
-              ${formatSeconds(seg.start)}
-            </span>
+        const el = document.createElement('div');
+        el.className = 't-line';
+        el.innerHTML = `
+          <div class="t-line-play">
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
           </div>
+          <div class="t-line-text">${esc(seg.text)}</div>
+          <div class="t-line-ts">${fmtSec(seg.start)}</div>
         `;
-
-        lineEl.onclick = () => {
-          if (AppState.player && AppState.playerReady) {
-            AppState.player.seekTo(seg.start, true);
-            AppState.player.playVideo();
-            highlightSegment(idx);
+        el.onclick = () => {
+          if (S.player && S.playerReady) {
+            S.player.seekTo(seg.start, true);
+            S.player.playVideo();
+            activateLine(idx);
           }
         };
-
-        container.appendChild(lineEl);
+        body.appendChild(el);
       });
 
-      let initialIdx = 0;
+      // activate closest to seekSec
+      let init = 0;
       for (let i = 0; i < segments.length; i++) {
-        if (segments[i].start >= seekSec) {
-          initialIdx = i;
-          break;
-        }
+        if (segments[i].start >= seekSec) { init = i; break; }
       }
-      highlightSegment(initialIdx);
+      activateLine(init);
     }
 
-    // ── Render Citations & Complexity Badges ───────────────────────────
-    function renderAnswerSection(data) {
-      const banner = document.getElementById('answer-banner');
-      const refusalBanner = document.getElementById('refusal-banner');
-      const bodyEl = document.getElementById('answer-body');
-      const metaEl = document.getElementById('answer-meta');
-      const complexityEl = document.getElementById('complexity-container');
-      const citationsList = document.getElementById('citations-list');
+    /* ── Render Answer Section ──────────────────────────────────── */
+    function renderAnswer(data) {
+      document.getElementById('refusal-banner').style.display = 'none';
+      document.getElementById('answer-banner').style.display = 'block';
 
-      refusalBanner.classList.add('hidden');
-      banner.classList.remove('hidden');
+      // Meta
+      document.getElementById('answer-meta').textContent =
+        `${data.tokens_used} tok · ${data.latency_ms}ms · Δ${data.retrieval_distance}`;
 
-      metaEl.textContent = `${data.tokens_used} tokens · ${data.latency_ms}ms · dist: ${data.retrieval_distance}`;
-
-      // 1. Complexity Badge with clean SVG icons
-      complexityEl.innerHTML = '';
+      // Complexity
+      const cr = document.getElementById('complexity-row');
+      cr.innerHTML = '';
       if (data.complexity_badge) {
         const b = data.complexity_badge;
-        complexityEl.innerHTML = `
-          <span class="px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-medium flex items-center gap-1.5">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            <span>Time: ${escapeHtml(b.time_complexity)}</span>
+        cr.innerHTML = `
+          <span class="badge-pill time">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            ${esc(b.time_complexity)}
           </span>
-          <span class="px-2.5 py-1 rounded-lg bg-sky-500/10 border border-sky-500/30 text-sky-400 font-medium flex items-center gap-1.5">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1.5 3 3.5 3h9c2 0 3.5-1 3.5-3V7c0-2-1.5-3-3.5-3h-9C5.5 4 4 5 4 7z"/></svg>
-            <span>Space: ${escapeHtml(b.space_complexity)}</span>
+          <span class="badge-pill space">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M16 1v4M8 1v4M4 9h16"/></svg>
+            ${esc(b.space_complexity)}
           </span>
-          <span class="px-2.5 py-1 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400 font-medium flex items-center gap-1.5">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
-            <span>Pattern: ${escapeHtml(b.pattern)}</span>
+          <span class="badge-pill pattern">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            ${esc(b.pattern)}
           </span>
         `;
       }
 
-      // 2. Format Answer text with interactive inline buttons
-      bodyEl.innerHTML = formatMarkdownAnswer(data.answer, data.citations);
+      // Body
+      document.getElementById('answer-body').innerHTML = fmtMd(data.answer, data.citations);
 
-      // 3. Render Referenced Citations buttons
-      citationsList.innerHTML = '';
-      if (data.citations && data.citations.length > 0) {
-        data.citations.forEach((c, idx) => {
+      // Citations
+      const cl = document.getElementById('citations-list');
+      cl.innerHTML = '';
+      if (data.citations && data.citations.length) {
+        data.citations.forEach((c, i) => {
           const btn = document.createElement('button');
-          btn.className = 'cite-btn px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-750 border border-slate-700 hover:border-indigo-500 text-xs text-slate-200 hover:text-indigo-300 font-medium transition flex items-center gap-1.5';
+          btn.className = 'cite-btn';
+          btn.dataset.idx = i;
           btn.innerHTML = `
-            <span class="text-indigo-400 font-bold">[${idx + 1}]</span>
-            <span class="max-w-[200px] truncate">${escapeHtml(c.title)}</span>
-            <span class="font-mono text-slate-400">@${formatSeconds(c.start_sec)}</span>
+            <span class="cite-num">[${i + 1}]</span>
+            <span class="cite-title">${esc(c.title)}</span>
+            <span class="cite-ts">@${fmtSec(c.start_sec)}</span>
           `;
-          btn.onclick = () => selectCitation(c, idx);
-          citationsList.appendChild(btn);
+          btn.onclick = () => selectCitation(c, i);
+          cl.appendChild(btn);
         });
-
         selectCitation(data.citations[0], 0);
       }
     }
 
-    function selectCitation(citation, index) {
-      AppState.activeCitation = citation;
-
-      const buttons = document.querySelectorAll('.cite-btn');
-      buttons.forEach((btn, idx) => {
-        if (idx === index) {
-          btn.className = 'cite-btn px-3 py-1.5 rounded-lg bg-indigo-900/60 border border-indigo-500 text-xs text-indigo-100 font-semibold shadow-md shadow-indigo-950/50 flex items-center gap-1.5';
-        } else {
-          btn.className = 'cite-btn px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-750 border border-slate-700 hover:border-indigo-500 text-xs text-slate-200 hover:text-indigo-300 font-medium transition flex items-center gap-1.5';
-        }
+    function selectCitation(citation, idx) {
+      S.activeCitation = citation;
+      document.querySelectorAll('.cite-btn').forEach((btn, i) => {
+        btn.classList.toggle('active', i === idx);
       });
-
       playLecture(citation.video_id, citation.seek_sec, citation.title);
       renderTranscript(citation.segments, citation.seek_sec);
     }
 
-    // ── Render Refusal State ──────────────────────────────────────────
-    function renderRefusalState(data) {
-      const banner = document.getElementById('answer-banner');
-      const refusalBanner = document.getElementById('refusal-banner');
-      const placeholder = document.getElementById('player-placeholder');
+    /* ── Render Refusal ─────────────────────────────────────────── */
+    function renderRefusal(data) {
+      document.getElementById('answer-banner').style.display = 'none';
+      document.getElementById('refusal-banner').style.display = 'block';
+      document.getElementById('refusal-title').textContent = data.answer || 'Ye topic in lectures me cover nahi hua.';
+      document.getElementById('refusal-meta').textContent =
+        `dist: ${data.retrieval_distance} (cutoff: 0.46) · tokens: 0 · LLM calls: 0`;
 
-      banner.classList.add('hidden');
-      refusalBanner.classList.remove('hidden');
-
-      document.getElementById('refusal-title').textContent = data.answer || "Ye topic in lectures me cover nahi hua.";
-      document.getElementById('refusal-meta').textContent = `Distance: ${data.retrieval_distance} (cutoff: 0.46) · Tokens: 0 · 0 LLM calls`;
-
-      if (placeholder) {
-        placeholder.style.display = 'flex';
-        placeholder.innerHTML = `
-          <div class="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-3 text-amber-400">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+      const ph = document.getElementById('player-placeholder');
+      if (ph) {
+        ph.style.display = 'flex';
+        ph.innerHTML = `
+          <div class="placeholder-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M4.93 4.93l14.14 14.14"/>
             </svg>
           </div>
-          <h3 class="text-base font-semibold text-slate-200">Out-of-Syllabus Query</h3>
-          <p class="text-xs text-slate-400 max-w-sm mt-1">
-            The refusal guard safely rejected this question without consuming tokens.
-          </p>
+          <div class="placeholder-title">Out-of-Syllabus Query</div>
+          <div class="placeholder-sub">Refusal guard rejected — zero tokens consumed.</div>
         `;
       }
-
       renderTranscript([], 0);
-      document.getElementById('active-video-title').textContent = 'Query Refused';
-      document.getElementById('active-video-ts').textContent = '00:00:00';
+      document.getElementById('video-title').textContent = 'Query Refused';
+      document.getElementById('video-ts').textContent = '00:00';
     }
 
-    // ── Main Ask Handler ──────────────────────────────────────────────
+    /* ── Main Handler ───────────────────────────────────────────── */
     async function handleAsk() {
       const input = document.getElementById('query-input');
-      const query = input.value.trim();
-      
-      if (!query || query.length < 3) {
-        input.focus();
-        return;
-      }
+      const q = input.value.trim();
+      if (!q || q.length < 3) { input.focus(); return; }
 
-      const askBtn = document.getElementById('ask-btn');
-      const spinner = document.getElementById('input-loading-spinner');
-
-      askBtn.disabled = true;
-      spinner.classList.remove('hidden');
+      const btn = document.getElementById('ask-btn');
+      const spin = document.getElementById('spinner-wrap');
+      btn.disabled = true;
+      spin.classList.remove('hidden');
 
       try {
         const res = await fetch('/api/ask', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query, top_k: 5 }),
+          body: JSON.stringify({ query: q, top_k: 5 }),
         });
-
-        if (!res.ok) {
-          throw new Error(`API error HTTP ${res.status}`);
-        }
-
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-        AppState.lastAnswerData = data;
-
-        if (data.is_refused) {
-          renderRefusalState(data);
-        } else {
-          renderAnswerSection(data);
-        }
+        S.lastData = data;
+        if (data.is_refused) renderRefusal(data);
+        else renderAnswer(data);
       } catch (err) {
-        alert(`Failed to fetch answer: ${err.message}`);
+        document.getElementById('refusal-title').textContent = `Error: ${err.message}`;
+        document.getElementById('refusal-banner').style.display = 'block';
+        document.getElementById('answer-banner').style.display = 'none';
       } finally {
-        askBtn.disabled = false;
-        spinner.classList.add('hidden');
+        btn.disabled = false;
+        spin.classList.add('hidden');
       }
     }
 
-    // ── Helper Formatter for Markdown / Citations ─────────────────────
-    function formatMarkdownAnswer(rawText, citations) {
-      if (!rawText) return '';
+    /* ── Markdown Formatter ─────────────────────────────────────── */
+    function fmtMd(raw, citations) {
+      if (!raw) return '';
+      let t = raw
+        .replace(/\[Time:[^\]]+\]/gi, '')
+        .trim()
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
 
-      let text = rawText.replace(/\[Time:\s*[^|]+?\s*\|\s*Space:\s*[^|]+?\s*\|\s*Pattern:\s*[^\]]+?\]/gi, '').trim();
-
-      text = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-      text = text.replace(/\*\*(.*?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>');
-      text = text.replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 rounded bg-slate-800 text-indigo-300 font-mono text-xs">$1</code>');
-
-      text = text.replace(/\[(\d+)\]/g, (match, numStr) => {
-        const idx = parseInt(numStr, 10) - 1;
-        if (citations && citations[idx]) {
-          return `<button onclick="selectCitation(AppState.lastAnswerData.citations[${idx}], ${idx})" class="inline-flex items-center px-1.5 py-0.5 mx-0.5 rounded bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 hover:text-indigo-100 text-xs font-mono font-semibold transition border border-indigo-500/30">📍 [${numStr}]</button>`;
+      t = t.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      t = t.replace(/`([^`]+)`/g, '<code>$1</code>');
+      t = t.replace(/\[(\d+)\]/g, (_, n) => {
+        const i = parseInt(n, 10) - 1;
+        if (citations && citations[i]) {
+          return `<button class="cite-inline" onclick="selectCitation(S.lastData.citations[${i}],${i})">[${n}]</button>`;
         }
-        return `<span class="inline-flex items-center px-1 py-0.5 mx-0.5 rounded bg-slate-800 text-slate-400 text-xs font-mono">[${numStr}]</span>`;
+        return `<code>${n}</code>`;
       });
 
-      const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-      return lines.map(line => {
-        if (line.startsWith('*') || line.startsWith('-')) {
-          return `<div class="flex items-start gap-2 pl-2"><span class="text-indigo-400 mt-1">•</span><span>${line.substring(1).trim()}</span></div>`;
-        }
-        return `<p class="leading-relaxed">${line}</p>`;
+      return t.split('\n').map(l => l.trim()).filter(Boolean).map(l => {
+        if (/^[-*]\s/.test(l))
+          return `<p style="padding-left:12px;position:relative"><span style="position:absolute;left:0;color:var(--accent)">›</span>${l.slice(2)}</p>`;
+        return `<p>${l}</p>`;
       }).join('');
     }
 
-    function formatSeconds(sec) {
-      const s = Math.floor(sec || 0);
+    /* ── Utilities ──────────────────────────────────────────────── */
+    function fmtSec(s) {
+      s = Math.floor(s || 0);
       const m = Math.floor((s % 3600) / 60);
       const ss = s % 60;
-      return `${String(m).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
+      return `${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
     }
-
-    function escapeHtml(str) {
-      return (str || '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
+    function esc(str) {
+      return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
-
     function setQuery(q) {
-      const input = document.getElementById('query-input');
-      input.value = q;
-      input.focus();
+      document.getElementById('query-input').value = q;
+      document.getElementById('query-input').focus();
       handleAsk();
     }
 
-    document.getElementById('query-input').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        handleAsk();
-      }
+    /* ── Init ───────────────────────────────────────────────────── */
+    document.getElementById('query-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) handleAsk();
     });
 
     fetch('/api/stats')
       .then(r => r.json())
-      .then(stats => {
-        if (stats && stats.total_chunks) {
-          document.getElementById('stat-text').textContent = `${stats.total_chunks.toLocaleString()} chunks · ${stats.total_videos} videos`;
-        }
+      .then(s => {
+        if (s && s.total_chunks)
+          document.getElementById('stat-text').textContent =
+            `${s.total_chunks.toLocaleString()} chunks · ${s.total_videos} videos`;
       })
       .catch(() => {});
   </script>
+
 </body>
 </html>
