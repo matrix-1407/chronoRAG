@@ -21,6 +21,7 @@ from qdrant_client.http.models import ScoredPoint
 
 import config
 from models import Citation, ComplexityBadge, RAGResponse, parse_badge
+from preprocess import preprocess_query
 
 
 # ── System prompt (exact, immutable) ──────────────────────────────────────
@@ -98,13 +99,18 @@ def _extract_cited_indices(answer_text: str, max_idx: int) -> list[int]:
     return sorted(r for r in refs if 0 <= r < max_idx)
 
 
-def _point_to_citation(pt: ScoredPoint) -> Citation:
+def _point_to_citation(pt: ScoredPoint, fallback_distance: float = 0.0) -> Citation:
     """Convert a Qdrant ScoredPoint to a Citation model."""
     p = pt.payload or {}
     text = p.get("text", "")
     preview = text[:120] + ("…" if len(text) > 120 else "")
-    # Cosine distance = 1 - cosine_similarity; qdrant .score is similarity
-    distance = 1.0 - float(pt.score)
+    score = float(pt.score)
+    # Cosine score is typically 0.0 - 1.0; RRF score is typically < 0.05
+    if score > 0.05:
+        distance = max(0.0, 1.0 - score)
+    else:
+        distance = fallback_distance
+
     return Citation(
         video_id=p.get("video_id", ""),
         title=p.get("title", ""),
@@ -125,6 +131,7 @@ REFUSAL_MSG = "Ye topic in lectures me cover nahi hua."
 def answer(
     query: str,
     points: list[ScoredPoint],
+    retrieval_distance: float | None = None,
     query_processed: str = "",
     t0: float | None = None,
 ) -> RAGResponse:
@@ -132,21 +139,20 @@ def answer(
     Full answer synthesis pipeline with guardrails.
 
     Args:
-        query:            Raw user query (for display in response).
-        points:           Top-K ScoredPoints from Qdrant (ordered by score desc).
-        query_processed:  Preprocessed query string (after acronym expansion).
-        t0:               Pipeline start time (for latency_ms).
+        query:               Raw user query (for display in response).
+        points:              Top-K ScoredPoints from Qdrant (ordered by score desc).
+        retrieval_distance:  Cosine distance metric from dense match (if hybrid).
+        query_processed:     Preprocessed query string (after acronym expansion).
+        t0:                  Pipeline start time (for latency_ms).
 
     Returns:
         RAGResponse — always a valid response, even on refusal or error.
-
-    Guardrail sequence:
-        1. If points is empty → refusal (0 tokens).
-        2. If best cosine distance > MAX_DISTANCE → refusal (0 tokens).
-        3. Build context, call Gemini, parse badge, filter citations.
     """
     if t0 is None:
         t0 = time.perf_counter()
+
+    if not query_processed:
+        query_processed = preprocess_query(query)
 
     def _elapsed_ms() -> int:
         return int((time.perf_counter() - t0) * 1000)
@@ -158,20 +164,24 @@ def answer(
             is_refused=True,
             retrieval_distance=1.0,
             tokens_used=0,
-            query_processed=query_processed or query,
+            query_processed=query_processed,
             latency_ms=_elapsed_ms(),
         )
 
     # ── Guard 2: distance cutoff ───────────────────────────────────────────
-    best_score = float(points[0].score)   # cosine similarity (0-1)
-    best_distance = 1.0 - best_score
+    if retrieval_distance is not None:
+        best_distance = float(retrieval_distance)
+    else:
+        top_score = float(points[0].score)
+        best_distance = max(0.0, 1.0 - top_score) if top_score > 0.05 else 0.0
+
     if best_distance > config.MAX_DISTANCE:
         return RAGResponse(
             answer=REFUSAL_MSG,
             is_refused=True,
             retrieval_distance=round(best_distance, 4),
             tokens_used=0,
-            query_processed=query_processed or query,
+            query_processed=query_processed,
             latency_ms=_elapsed_ms(),
         )
 
@@ -221,7 +231,7 @@ def answer(
     if not cited_indices:
         cited_indices = [0]
 
-    citations = [_point_to_citation(points[i]) for i in cited_indices]
+    citations = [_point_to_citation(points[i], fallback_distance=best_distance) for i in cited_indices]
 
     return RAGResponse(
         answer=answer_text,
