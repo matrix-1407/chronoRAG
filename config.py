@@ -27,6 +27,7 @@ OPENROUTER_API_KEY: str | None = os.environ.get("OPENROUTER_API_KEY") or None
 COLLECTION_NAME: str = os.environ.get("YTRAG_COLLECTION", "dsa_lectures_1024")
 EMBED_MODEL: str = os.environ.get("YTRAG_EMBED_MODEL", "BAAI/bge-m3")
 EMBED_DIM: int = 1024  # bge-m3 fixed output dimension
+SPARSE_MODEL: str = os.environ.get("YTRAG_SPARSE_MODEL", "Qdrant/bm25")
 GEMINI_MODEL: str = os.environ.get("YTRAG_GEMINI_MODEL", "gemini-3.5-flash")
 
 # ── Chunking ───────────────────────────────────────────────────────────────
@@ -37,10 +38,12 @@ PLAYBACK_REWIND: int = int(os.environ.get("YTRAG_LINK_REWIND", 5))
 MIN_CHUNK_WORDS: int = 20   # skip near-silent windows
 UNIQUE_RATIO_THRESHOLD: float = 0.35   # Whisper repetition filter
 
-# ── Retrieval ──────────────────────────────────────────────────────────────
-MAX_DISTANCE: float = float(os.environ.get("YTRAG_MAX_DISTANCE", 0.5))
+# ── Retrieval (Hybrid & RRF) ────────────────────────────────────────────────
+MAX_DISTANCE: float = float(os.environ.get("YTRAG_MAX_DISTANCE", 0.46))
 TOP_K: int = 5
-TOP_K_DENSE: int = 10
+TOP_K_DENSE: int = int(os.environ.get("YTRAG_TOP_K_DENSE", 10))
+TOP_K_SPARSE: int = int(os.environ.get("YTRAG_TOP_K_SPARSE", 10))
+RRF_K: int = int(os.environ.get("YTRAG_RRF_K", 60))
 
 # ── Generation ─────────────────────────────────────────────────────────────
 MAX_OUTPUT_TOKENS: int = int(os.environ.get("YTRAG_MAX_OUTPUT_TOKENS", 300))

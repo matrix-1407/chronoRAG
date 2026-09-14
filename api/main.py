@@ -34,6 +34,7 @@ import embed        # noqa: E402 — imports after path fix
 import index        # noqa: E402
 from answer import answer as rag_answer  # noqa: E402
 from models import AskRequest, RAGResponse, StatsResponse  # noqa: E402
+from preprocess import preprocess_query  # noqa: E402
 
 
 # ── Lifespan (startup / shutdown) ──────────────────────────────────────────
@@ -41,21 +42,23 @@ from models import AskRequest, RAGResponse, StatsResponse  # noqa: E402
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
-    Startup: warm up the embedding model and verify Qdrant connectivity.
-    This avoids a cold-start delay on the very first request.
+    Startup: warm up dense and sparse embedding models and verify Qdrant connectivity.
+    This avoids cold-start delays on the first request.
     """
-    print("[startup] Warming up embedding model …")
-    embed.encode_query("warmup")          # loads bge-m3 into memory
+    print("[startup] Warming up hybrid embedding models (dense + sparse BM25) …")
+    embed.hybrid_embedder.embed_query("warmup")
     print("[startup] Verifying Qdrant connectivity …")
     client = index.get_client()
     if not index.collection_exists(client):
         print(
             f"[startup] WARNING: Collection '{config.COLLECTION_NAME}' not found. "
-            "Run `tuberag reindex` before making queries."
+            "Run `tuberag reindex --force` before making queries."
         )
     else:
         stats = index.get_collection_stats(client)
-        print(f"[startup] Qdrant OK — {stats['total_chunks']:,} chunks in collection")
+        is_hyb = index.is_hybrid_collection(client)
+        mode_str = "Hybrid (Dense + BM25)" if is_hyb else "Dense-only"
+        print(f"[startup] Qdrant OK — {stats['total_chunks']:,} chunks in collection [{mode_str}]")
     yield
     print("[shutdown] Bye!")
 
@@ -106,14 +109,15 @@ async def root():
 @app.post("/api/ask", response_model=RAGResponse, tags=["RAG"])
 async def ask(request: AskRequest) -> RAGResponse:
     """
-    Full RAG pipeline.
+    Full Phase 2 RAG pipeline.
 
-    1. Encode query with bge-m3.
-    2. Dense cosine search in Qdrant (top_k).
-    3. Distance cutoff guard (MAX_DISTANCE = 0.5):
-       - If no good match → refusal with 0 tokens.
-    4. Gemini 2.5 Flash generation with strict system prompt.
-    5. Return structured RAGResponse with answer, badge, and citations.
+    1. Preprocess query (acronym expansion + LeetCode normalization).
+    2. Encode with HybridEmbedder (dense bge-m3 + FastEmbed BM25).
+    3. Hybrid retrieval in Qdrant with Reciprocal Rank Fusion (RRF).
+    4. Distance cutoff guard (MAX_DISTANCE = 0.5):
+       - If best distance > 0.5 → refusal with 0 tokens.
+    5. Gemini generation with strict system prompt.
+    6. Return structured RAGResponse with answer, badge, and citations.
     """
     t0 = time.perf_counter()
 
@@ -122,19 +126,33 @@ async def ask(request: AskRequest) -> RAGResponse:
     except Exception as exc:
         raise HTTPException(status_code=503, detail=f"Qdrant unavailable: {exc}")
 
-    # Vector search
-    query_vec = embed.encode_query(request.query)
+    # 1. Preprocess query
+    query_processed = preprocess_query(request.query)
+
+    # 2. Vector search (Hybrid with RRF, fallback to dense if collection not yet migrated)
     try:
-        points = index.search_dense(client, query_vec, top_k=request.top_k)
+        if index.is_hybrid_collection(client):
+            query_dense, query_sparse = embed.hybrid_embedder.embed_query(query_processed)
+            points, best_distance = index.search_hybrid(
+                client=client,
+                query_dense=query_dense,
+                query_sparse=query_sparse,
+                top_k=request.top_k,
+            )
+        else:
+            query_vec = embed.encode_query(query_processed)
+            points = index.search_dense(client, query_vec, top_k=request.top_k)
+            best_distance = 1.0 - float(points[0].score) if points else 1.0
     except Exception as exc:
         raise HTTPException(status_code=503, detail=f"Search failed: {exc}")
 
-    # Generate answer (includes all guardrails)
+    # 3. Generate answer (includes all guardrails)
     try:
         resp = rag_answer(
             query=request.query,
             points=points,
-            query_processed=request.query,
+            retrieval_distance=best_distance,
+            query_processed=query_processed,
             t0=t0,
         )
     except Exception as exc:

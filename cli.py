@@ -28,6 +28,7 @@ import embed
 import index
 from answer import answer as rag_answer
 from models import RAGResponse
+from preprocess import preprocess_query
 
 app = typer.Typer(
     name="tuberag",
@@ -48,22 +49,26 @@ def reindex(
     ),
     force: bool = typer.Option(
         False, "--force", "-f",
-        help="Re-index ALL videos, including already-indexed ones",
+        help="Re-index ALL videos and recreate collection with hybrid named-vectors schema",
     ),
 ) -> None:
     """
-    Chunk all transcripts and upsert embeddings to Qdrant Cloud.
+    Chunk all transcripts and upsert dense + sparse embeddings to Qdrant Cloud.
 
     By default, videos already present in the collection are skipped
-    (incremental sync). Use --force to wipe and re-index everything.
+    (incremental sync). Use --force to wipe and re-index with the Phase 2
+    hybrid vector schema.
     """
     client = index.get_client()
-    index.ensure_collection(client)
+
+    # Recreate collection if forced or if existing schema is non-hybrid
+    needs_recreate = force or (index.collection_exists(client) and not index.is_hybrid_collection(client))
+    index.ensure_collection(client, force_recreate=needs_recreate)
 
     # Determine which video_ids to skip
-    if force:
+    if force or needs_recreate:
         already_indexed: set[str] = set()
-        console.print("[yellow]--force: re-indexing ALL videos[/]")
+        console.print("[yellow]Re-indexing ALL videos into hybrid collection schema[/]")
     else:
         console.print("[cyan]Checking already-indexed videos …[/]")
         already_indexed = index.get_indexed_video_ids(client)
@@ -87,19 +92,20 @@ def reindex(
         console.print("[yellow]No chunks produced — check transcript quality.[/]")
         raise typer.Exit()
 
-    # Encode
+    # Hybrid encode (dense bge-m3 + sparse BM25)
     texts = [c.text_for_embed for c in chunks]
-    vectors = embed.encode_chunks(texts)
+    dense_vectors, sparse_vectors = embed.hybrid_embedder.embed_chunks(texts)
 
-    # Upsert
-    total = index.upsert_chunks(client, chunks, vectors)
+    # Upsert with named vectors
+    total = index.upsert_chunks(client, chunks, dense_vectors, sparse_vectors)
     console.print(
         Panel(
             f"[bold green][OK] Done![/]\n"
             f"Videos indexed : {len(docs)}\n"
             f"Chunks upserted: {total:,}\n"
-            f"Collection     : {config.COLLECTION_NAME}",
-            title="Reindex Complete",
+            f"Collection     : {config.COLLECTION_NAME}\n"
+            f"Schema         : Hybrid (Dense 1024 Cosine + Sparse BM25)",
+            title="Hybrid Reindex Complete",
         )
     )
 
@@ -132,49 +138,109 @@ def stats() -> None:
     console.print(table)
 
 
-# ── search ─────────────────────────────────────────────────────────────────
+# ── search / find ──────────────────────────────────────────────────────────
 
-@app.command()
-def search(
+@app.command(name="find")
+@app.command(name="search")
+def find(
     query: str = typer.Argument(..., help="Query text to search for"),
     top_k: int = typer.Option(5, "--top-k", "-k", help="Number of results"),
 ) -> None:
-    """Raw vector search — returns top-K chunks without LLM generation."""
+    """
+    Search lecture chunks — displays RRF, dense, and sparse matching scores.
+    """
     client = index.get_client()
-    query_vec = embed.encode_query(query)
-    results = index.search_dense(client, query_vec, top_k=top_k)
 
-    if not results:
-        console.print("[yellow]No results found.[/]")
-        raise typer.Exit()
+    # Preprocess
+    query_processed = preprocess_query(query)
+    if query_processed.lower() != query.lower():
+        console.print(f"[dim]Expanded query:[/] [cyan]{query_processed}[/]")
 
-    table = Table(title=f"Search: '{query}'", show_lines=True)
-    table.add_column("#", width=3)
-    table.add_column("Score / Dist", width=14)
-    table.add_column("Lecture", style="cyan")
-    table.add_column("Timestamp", width=10)
-    table.add_column("Preview", max_width=55, no_wrap=True)
+    dense_vec, sparse_vec = embed.hybrid_embedder.embed_query(query_processed)
 
-    for i, pt in enumerate(results, 1):
-        p = pt.payload or {}
-        dist = round(1 - pt.score, 4)
-        flag = " ✗" if dist > config.MAX_DISTANCE else ""
-        table.add_row(
-            str(i),
-            f"{pt.score:.4f} / {dist:.4f}{flag}",
-            p.get("title", "?")[:35],
-            f"{int(p.get('start_sec', 0))}s",
-            (p.get("text", ""))[:55],
+    if index.is_hybrid_collection(client):
+        # Retrieve dense and sparse independently to extract individual scores
+        dense_results = index.search_dense(client, dense_vec, top_k=top_k * 2)
+        sparse_results = index.search_sparse(client, sparse_vec, top_k=top_k * 2)
+        hybrid_results, best_dist = index.search_hybrid(
+            client=client,
+            query_dense=dense_vec,
+            query_sparse=sparse_vec,
+            top_k=top_k,
         )
 
-    console.print(table)
+        if not hybrid_results:
+            console.print("[yellow]No results found.[/]")
+            raise typer.Exit()
 
-    best_dist = 1 - results[0].score
-    if best_dist > config.MAX_DISTANCE:
-        console.print(
-            f"\n[red][WARN] Best distance {best_dist:.4f} > {config.MAX_DISTANCE} "
-            f"(MAX_DISTANCE) - this query would be refused.[/]"
-        )
+        dense_scores = {pt.id: float(pt.score) for pt in dense_results}
+        sparse_scores = {pt.id: float(pt.score) for pt in sparse_results}
+
+        table = Table(title=f"Hybrid Search (RRF): '{query}'", show_lines=True)
+        table.add_column("#", width=3)
+        table.add_column("RRF Score", width=10, style="magenta")
+        table.add_column("Dense (Cosine)", width=14, style="green")
+        table.add_column("Sparse (BM25)", width=13, style="yellow")
+        table.add_column("Lecture", style="cyan")
+        table.add_column("Timestamp", width=10)
+        table.add_column("Preview", max_width=50, no_wrap=True)
+
+        for i, pt in enumerate(hybrid_results, 1):
+            p = pt.payload or {}
+            d_score = dense_scores.get(pt.id)
+            d_str = f"{d_score:.3f} (d={1-d_score:.3f})" if d_score is not None else "—"
+            s_score = sparse_scores.get(pt.id)
+            s_str = f"{s_score:.2f}" if s_score is not None else "—"
+
+            table.add_row(
+                str(i),
+                f"{pt.score:.4f}",
+                d_str,
+                s_str,
+                p.get("title", "?")[:32],
+                f"{int(p.get('start_sec', 0))}s",
+                (p.get("text", ""))[:50],
+            )
+        console.print(table)
+
+        if best_dist > config.MAX_DISTANCE:
+            console.print(
+                f"\n[red][WARN] Best dense distance {best_dist:.4f} > {config.MAX_DISTANCE} "
+                f"(MAX_DISTANCE) — this query would trigger refusal guard.[/]"
+            )
+    else:
+        # Fallback to dense search if collection not yet migrated
+        results = index.search_dense(client, dense_vec, top_k=top_k)
+        if not results:
+            console.print("[yellow]No results found.[/]")
+            raise typer.Exit()
+
+        table = Table(title=f"Dense Search: '{query}'", show_lines=True)
+        table.add_column("#", width=3)
+        table.add_column("Score / Dist", width=14)
+        table.add_column("Lecture", style="cyan")
+        table.add_column("Timestamp", width=10)
+        table.add_column("Preview", max_width=55, no_wrap=True)
+
+        for i, pt in enumerate(results, 1):
+            p = pt.payload or {}
+            dist = round(1 - pt.score, 4)
+            flag = " ✗" if dist > config.MAX_DISTANCE else ""
+            table.add_row(
+                str(i),
+                f"{pt.score:.4f} / {dist:.4f}{flag}",
+                p.get("title", "?")[:35],
+                f"{int(p.get('start_sec', 0))}s",
+                (p.get("text", ""))[:55],
+            )
+        console.print(table)
+
+        best_dist = 1 - results[0].score
+        if best_dist > config.MAX_DISTANCE:
+            console.print(
+                f"\n[red][WARN] Best distance {best_dist:.4f} > {config.MAX_DISTANCE} "
+                f"(MAX_DISTANCE) — this query would trigger refusal guard.[/]"
+            )
 
 
 # ── ask ────────────────────────────────────────────────────────────────────
@@ -184,16 +250,37 @@ def ask(
     query: str = typer.Argument(..., help="DSA question in Hindi/English/Hinglish"),
     top_k: int = typer.Option(5, "--top-k", "-k", help="Number of chunks to retrieve"),
 ) -> None:
-    """Full RAG pipeline: search + generate answer with Gemini."""
+    """Full RAG pipeline: preprocess + hybrid search + generate answer with Gemini."""
     client = index.get_client()
     t0 = time.perf_counter()
 
-    # Retrieve
-    query_vec = embed.encode_query(query)
-    points = index.search_dense(client, query_vec, top_k=top_k)
+    # Preprocess
+    query_processed = preprocess_query(query)
+    if query_processed.lower() != query.lower():
+        console.print(f"[dim]Expanded query:[/] [cyan]{query_processed}[/]")
+
+    # Hybrid Embed & Retrieve
+    dense_vec, sparse_vec = embed.hybrid_embedder.embed_query(query_processed)
+
+    if index.is_hybrid_collection(client):
+        points, best_distance = index.search_hybrid(
+            client=client,
+            query_dense=dense_vec,
+            query_sparse=sparse_vec,
+            top_k=top_k,
+        )
+    else:
+        points = index.search_dense(client, dense_vec, top_k=top_k)
+        best_distance = 1.0 - float(points[0].score) if points else 1.0
 
     # Generate (includes refusal guard)
-    resp: RAGResponse = rag_answer(query, points, t0=t0)
+    resp: RAGResponse = rag_answer(
+        query=query,
+        points=points,
+        retrieval_distance=best_distance,
+        query_processed=query_processed,
+        t0=t0,
+    )
 
     # Display
     if resp.is_refused:

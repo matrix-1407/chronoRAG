@@ -1,9 +1,11 @@
 """
-index.py — Qdrant Cloud collection management and idempotent upsert pipeline.
+index.py — Qdrant Cloud collection management and idempotent hybrid upsert pipeline.
 
 Collection: dsa_lectures_1024
-Vectors:    dense (1024-dim Cosine) — Phase 1 only (sparse BM25 added in Phase 2)
-IDs:        uuid5(NAMESPACE_DNS, f"{video_id}:{int(start_sec)}") — deterministic
+Named Vectors:
+  - 'dense': 1024-dim Cosine (bge-m3)
+  - 'sparse': SparseVectorParams with BM25 (FastEmbed)
+IDs: uuid5(NAMESPACE_DNS, f"{video_id}:{int(start_sec)}") — deterministic
 
 Calling upsert_chunks() multiple times with the same chunks is safe:
 Qdrant upsert() overwrites existing points at the same ID.
@@ -40,29 +42,61 @@ def collection_exists(client: QdrantClient) -> bool:
     return client.collection_exists(config.COLLECTION_NAME)
 
 
+def is_hybrid_collection(client: QdrantClient) -> bool:
+    """Check if the collection exists and is configured with named sparse vectors."""
+    if not collection_exists(client):
+        return False
+    try:
+        info = client.get_collection(config.COLLECTION_NAME)
+        sparse_ok = bool(info.config.params.sparse_vectors and "sparse" in info.config.params.sparse_vectors)
+        dense_ok = bool(
+            isinstance(info.config.params.vectors, dict) and "dense" in info.config.params.vectors
+        )
+        return dense_ok and sparse_ok
+    except Exception:
+        return False
+
+
 def create_collection(client: QdrantClient) -> None:
     """
-    Create 'dsa_lectures_1024' with a single dense vector field (Cosine).
-    Phase 2 will add a sparse 'sparse' vector field for BM25.
+    Create 'dsa_lectures_1024' with named vectors:
+    - 'dense': 1024-dim Cosine (bge-m3)
+    - 'sparse': SparseVectorParams (FastEmbed BM25)
     Raises if collection already exists — check with collection_exists() first.
     """
     client.create_collection(
         collection_name=config.COLLECTION_NAME,
-        vectors_config=qm.VectorParams(
-            size=config.EMBED_DIM,
-            distance=qm.Distance.COSINE,
-            on_disk=False,
-        ),
+        vectors_config={
+            "dense": qm.VectorParams(
+                size=config.EMBED_DIM,
+                distance=qm.Distance.COSINE,
+                on_disk=False,
+            )
+        },
+        sparse_vectors_config={
+            "sparse": qm.SparseVectorParams(
+                index=qm.SparseIndexParams(
+                    on_disk=False,
+                )
+            )
+        },
     )
-    print(f"[index] Created collection '{config.COLLECTION_NAME}' (dim={config.EMBED_DIM}, Cosine)")
+    print(f"[index] Created hybrid collection '{config.COLLECTION_NAME}' (dense={config.EMBED_DIM} Cosine, sparse={config.SPARSE_MODEL})")
 
 
-def ensure_collection(client: QdrantClient) -> None:
-    """Create the collection if it doesn't already exist."""
-    if not collection_exists(client):
+def ensure_collection(client: QdrantClient, force_recreate: bool = False) -> None:
+    """Create the hybrid collection if missing, or recreate if force_recreate is set."""
+    if force_recreate and collection_exists(client):
+        delete_collection(client)
+        create_collection(client)
+    elif not collection_exists(client):
+        create_collection(client)
+    elif not is_hybrid_collection(client):
+        print(f"[index] Existing collection '{config.COLLECTION_NAME}' is non-hybrid. Upgrading schema …")
+        delete_collection(client)
         create_collection(client)
     else:
-        print(f"[index] Collection '{config.COLLECTION_NAME}' already exists — skipping creation")
+        print(f"[index] Hybrid collection '{config.COLLECTION_NAME}' already exists — skipping creation")
 
 
 def delete_collection(client: QdrantClient) -> None:
@@ -116,43 +150,56 @@ def upsert_chunks(
     client: QdrantClient,
     chunks: list[Chunk],
     dense_vectors: np.ndarray,
+    sparse_vectors: list[qm.SparseVector] | None = None,
     batch_size: int = 100,
 ) -> int:
     """
-    Idempotent upsert of chunks + their dense vectors into Qdrant Cloud.
+    Idempotent upsert of chunks + their named dense & sparse vectors into Qdrant Cloud.
 
     Args:
         client:         Authenticated QdrantClient.
         chunks:         List of Chunk objects (length N).
         dense_vectors:  float32 ndarray of shape (N, 1024).
+        sparse_vectors: List of qm.SparseVector objects (length N), or None.
         batch_size:     Number of points per upsert call (100 is safe).
 
     Returns:
         Total number of points successfully upserted.
-
-    The uuid5-based point IDs make repeated upserts idempotent:
-    Qdrant will overwrite an existing point at the same ID rather than
-    creating a duplicate.
     """
     assert len(chunks) == len(dense_vectors), (
-        f"Chunk count ({len(chunks)}) ≠ vector count ({len(dense_vectors)})"
+        f"Chunk count ({len(chunks)}) ≠ dense vector count ({len(dense_vectors)})"
     )
+    if sparse_vectors is not None:
+        assert len(chunks) == len(sparse_vectors), (
+            f"Chunk count ({len(chunks)}) ≠ sparse vector count ({len(sparse_vectors)})"
+        )
 
     total_upserted = 0
     batches = [
-        (chunks[i : i + batch_size], dense_vectors[i : i + batch_size])
+        (
+            chunks[i : i + batch_size],
+            dense_vectors[i : i + batch_size],
+            sparse_vectors[i : i + batch_size] if sparse_vectors is not None else None,
+        )
         for i in range(0, len(chunks), batch_size)
     ]
 
-    for chunk_batch, vec_batch in tqdm(batches, desc="Upserting to Qdrant", unit="batch"):
-        points = [
-            qm.PointStruct(
-                id=chunk.id,
-                vector=vec.tolist(),
-                payload=chunk.to_qdrant_payload(),
+    for chunk_batch, dense_batch, sparse_batch in tqdm(batches, desc="Upserting to Qdrant", unit="batch"):
+        points = []
+        for j, (chunk, dense_vec) in enumerate(zip(chunk_batch, dense_batch)):
+            vector_payload: dict[str, Any] = {
+                "dense": dense_vec.tolist(),
+            }
+            if sparse_batch is not None:
+                vector_payload["sparse"] = sparse_batch[j]
+
+            points.append(
+                qm.PointStruct(
+                    id=chunk.id,
+                    vector=vector_payload,
+                    payload=chunk.to_qdrant_payload(),
+                )
             )
-            for chunk, vec in zip(chunk_batch, vec_batch)
-        ]
 
         # Retry up to 3 times with exponential backoff
         for attempt in range(3):
@@ -174,7 +221,7 @@ def upsert_chunks(
     return total_upserted
 
 
-# ── Dense retrieval ────────────────────────────────────────────────────────
+# ── Retrieval ──────────────────────────────────────────────────────────────
 
 def search_dense(
     client: QdrantClient,
@@ -182,17 +229,92 @@ def search_dense(
     top_k: int = config.TOP_K_DENSE,
 ) -> list[qm.ScoredPoint]:
     """
-    Cosine similarity search in the dense vector space.
-
-    Uses client.query_points() (qdrant-client >= 1.7 API).
-    Returns ScoredPoints where .score is cosine similarity (0–1).
-    Distance = 1 - score; lower distance = more relevant.
+    Cosine similarity search in the named 'dense' vector space.
     """
     response = client.query_points(
         collection_name=config.COLLECTION_NAME,
         query=query_vector.tolist(),
+        using="dense",
         limit=top_k,
         with_payload=True,
         with_vectors=False,
     )
     return response.points
+
+
+def search_sparse(
+    client: QdrantClient,
+    query_sparse: qm.SparseVector,
+    top_k: int = config.TOP_K_SPARSE,
+) -> list[qm.ScoredPoint]:
+    """
+    BM25 sparse similarity search in the named 'sparse' vector space.
+    """
+    response = client.query_points(
+        collection_name=config.COLLECTION_NAME,
+        query=query_sparse,
+        using="sparse",
+        limit=top_k,
+        with_payload=True,
+        with_vectors=False,
+    )
+    return response.points
+
+
+def search_hybrid(
+    client: QdrantClient,
+    query_dense: np.ndarray,
+    query_sparse: qm.SparseVector,
+    top_k: int = config.TOP_K,
+    top_k_dense: int = config.TOP_K_DENSE,
+    top_k_sparse: int = config.TOP_K_SPARSE,
+) -> tuple[list[qm.ScoredPoint], float]:
+    """
+    Perform hybrid retrieval (Dense + Sparse BM25) fused with Reciprocal Rank Fusion (RRF).
+
+    Returns:
+        (results, best_distance):
+        - results: top_k ScoredPoints ordered by fused RRF score
+        - best_distance: exact cosine distance of the best dense match (1 - best_dense_score)
+                         Used for out-of-syllabus refusal guard.
+    """
+    prefetch = [
+        qm.Prefetch(
+            query=query_sparse,
+            using="sparse",
+            limit=top_k_sparse,
+        ),
+        qm.Prefetch(
+            query=query_dense.tolist(),
+            using="dense",
+            limit=top_k_dense,
+        ),
+    ]
+
+    response = client.query_points(
+        collection_name=config.COLLECTION_NAME,
+        prefetch=prefetch,
+        query=qm.FusionQuery(fusion=qm.Fusion.RRF),
+        limit=top_k,
+        with_payload=True,
+        with_vectors=False,
+    )
+
+    # Compute best dense distance for distance threshold guardrail
+    best_distance = 1.0
+    try:
+        dense_top = client.query_points(
+            collection_name=config.COLLECTION_NAME,
+            query=query_dense.tolist(),
+            using="dense",
+            limit=1,
+            with_payload=False,
+            with_vectors=False,
+        ).points
+        if dense_top:
+            best_distance = max(0.0, 1.0 - float(dense_top[0].score))
+    except Exception:
+        pass
+
+    return response.points, best_distance
+
