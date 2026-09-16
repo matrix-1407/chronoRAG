@@ -137,10 +137,21 @@ def parse_badge(text: str) -> Optional[ComplexityBadge]:
     )
 
 
+class PracticeProblem(BaseModel):
+    """Curated or detected practice problem from LeetCode or GeeksforGeeks."""
+    model_config = ConfigDict(frozen=True)
+
+    title: str
+    platform: str                  # "LeetCode" | "GFG"
+    url: str
+    difficulty: str                # "Easy" | "Medium" | "Hard"
+
+
 class RAGResponse(BaseModel):
     answer: str
     complexity_badge: Optional[ComplexityBadge] = None
     citations: list[Citation] = []
+    practice_problems: list[PracticeProblem] = Field(default_factory=list)
     retrieval_distance: float = 1.0
     tokens_used: int = 0
     is_refused: bool = False

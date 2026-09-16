@@ -20,7 +20,8 @@ from google.genai import types as genai_types
 from qdrant_client.http.models import ScoredPoint
 
 import config
-from models import Citation, ComplexityBadge, RAGResponse, parse_badge
+from leetcode_mapper import get_practice_links
+from models import Citation, ComplexityBadge, PracticeProblem, RAGResponse, parse_badge
 from preprocess import preprocess_query
 
 
@@ -233,14 +234,25 @@ def answer(
                 continue
             break
 
+    # ── Practice problems auto-mapping (Phase 4) ───────────────────────────
+    retrieved_titles = [str(p.payload.get("title", "")) for p in points if p.payload]
+    retrieved_texts = [str(p.payload.get("text", "")) for p in points if p.payload]
+
     if response is None:
         # Fallback gracefully instead of crashing with unhandled ServerError
         err_detail = "Server temporarily busy. Please try again in a few seconds."
         print(f"[answer] Gemini call failed after retries: {last_err}")
+        practice_raw = get_practice_links(
+            query=query,
+            retrieved_titles=retrieved_titles,
+            retrieved_texts=retrieved_texts,
+            pattern=None,
+        )
         return RAGResponse(
             answer=f"⚠️ {err_detail}",
             complexity_badge=None,
             citations=[],
+            practice_problems=[PracticeProblem(**p) for p in practice_raw],
             retrieval_distance=round(best_distance, 4),
             tokens_used=0,
             is_refused=False,
@@ -259,6 +271,15 @@ def answer(
     # ── Parse complexity badge ─────────────────────────────────────────────
     badge: ComplexityBadge | None = parse_badge(answer_text)
 
+    # ── Map practice problems using query, titles, and extracted pattern ───
+    practice_raw = get_practice_links(
+        query=query,
+        retrieved_titles=retrieved_titles,
+        retrieved_texts=retrieved_texts,
+        pattern=badge.pattern if badge else None,
+    )
+    practice_problems = [PracticeProblem(**p) for p in practice_raw]
+
     # ── Filter to explicitly cited chunks only ─────────────────────────────
     cited_indices = _extract_cited_indices(answer_text, len(points))
     # If model produced no [N] refs at all, surface the top result anyway
@@ -271,6 +292,7 @@ def answer(
         answer=answer_text,
         complexity_badge=badge,
         citations=citations,
+        practice_problems=practice_problems,
         retrieval_distance=round(best_distance, 4),
         tokens_used=tokens_used,
         is_refused=False,

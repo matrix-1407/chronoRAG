@@ -360,23 +360,41 @@
       font-size: 11px; font-family: 'JetBrains Mono', monospace;
       color: var(--text-dim);
     }
-    /* Complexity pills */
+    /* Complexity pills (Enhanced Phase 4) */
     .complexity-row {
       display: flex; flex-wrap: wrap; gap: 6px;
     }
     .badge-pill {
-      display: flex; align-items: center; gap: 5px;
-      padding: 4px 10px;
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 11px;
       border-radius: var(--radius-xs);
       font-size: 11px; font-family: 'JetBrains Mono', monospace;
-      font-weight: 500;
-      background: var(--surface-2);
-      box-shadow: var(--neu-shadow-sm);
+      font-weight: 600;
+      box-shadow: 2px 2px 6px rgba(0,0,0,0.5), inset 1px 1px 2px rgba(255,255,255,0.04);
+      transition: transform 0.15s, box-shadow 0.15s;
     }
-    .badge-pill.time   { color: var(--green); border: 1px solid rgba(92,184,138,0.2); }
-    .badge-pill.space  { color: var(--blue);  border: 1px solid rgba(110,163,201,0.2); }
-    .badge-pill.pattern{ color: var(--accent); border: 1px solid rgba(201,169,110,0.2); }
-    .badge-pill svg { opacity: 0.8; }
+    .badge-pill:hover {
+      transform: translateY(-1px);
+    }
+    .badge-pill.time {
+      color: #10b981;
+      background: rgba(16, 185, 129, 0.09);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      box-shadow: 2px 2px 6px rgba(0,0,0,0.5), 0 0 10px rgba(16, 185, 129, 0.12);
+    }
+    .badge-pill.space {
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.09);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      box-shadow: 2px 2px 6px rgba(0,0,0,0.5), 0 0 10px rgba(56, 189, 248, 0.12);
+    }
+    .badge-pill.pattern {
+      color: #c084fc;
+      background: rgba(168, 85, 247, 0.09);
+      border: 1px solid rgba(168, 85, 247, 0.3);
+      box-shadow: 2px 2px 6px rgba(0,0,0,0.5), 0 0 10px rgba(168, 85, 247, 0.12);
+    }
+    .badge-pill svg { opacity: 0.9; flex-shrink: 0; }
 
     /* Answer body text */
     #answer-body {
@@ -404,7 +422,99 @@
     }
     #answer-body .cite-inline:hover { background: var(--accent-glow); }
 
-    /* Citations row */
+    /* Practice Problems section (Phase 4) */
+    .practice-section {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 6px 0 2px 0;
+    }
+    .practice-label {
+      font-size: 10.5px;
+      color: var(--text-dim);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex-shrink: 0;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .practice-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      align-items: center;
+    }
+    .problem-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 4px 10px 4px 8px;
+      border-radius: var(--radius-xs);
+      background: var(--surface-2);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--neu-shadow-sm);
+      font-size: 11px;
+      font-family: inherit;
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: border-color 0.15s, color 0.15s, transform 0.12s, box-shadow 0.15s;
+    }
+    .problem-badge:hover {
+      border-color: rgba(201,169,110,0.4);
+      color: var(--text);
+      transform: translateY(-1px);
+      box-shadow: var(--neu-shadow-sm), 0 0 10px rgba(201,169,110,0.12);
+    }
+    .platform-pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9.5px;
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+    .platform-pill.leetcode {
+      background: rgba(234, 88, 12, 0.15);
+      color: #fb923c;
+      border: 1px solid rgba(234, 88, 12, 0.3);
+    }
+    .platform-pill.gfg {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .diff-pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9.5px;
+      font-weight: 600;
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+    .diff-pill.easy {
+      background: rgba(16, 185, 129, 0.12);
+      color: #10b981;
+    }
+    .diff-pill.medium {
+      background: rgba(245, 158, 11, 0.12);
+      color: #f59e0b;
+    }
+    .diff-pill.hard {
+      background: rgba(244, 63, 94, 0.12);
+      color: #f43f5e;
+    }
+
+    /* Bottom Row: Citations & Export Action Center */
+    .banner-bottom-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
     .citations-row {
       display: flex; align-items: center; gap: 8px;
       flex-wrap: wrap;
@@ -451,6 +561,76 @@
       font-family: 'JetBrains Mono', monospace;
       font-size: 10px; color: var(--text-dim);
       flex-shrink: 0;
+    }
+
+    /* Export Action Buttons */
+    .export-actions-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
+    }
+    .export-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 11px;
+      border-radius: var(--radius-xs);
+      background: var(--surface-2);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--neu-shadow-sm);
+      font-size: 11px;
+      font-weight: 500;
+      font-family: inherit;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .export-btn:hover {
+      border-color: rgba(201,169,110,0.35);
+      color: var(--accent);
+      transform: translateY(-1px);
+    }
+    .export-btn.export-btn-primary {
+      background: var(--surface-3);
+      border-color: rgba(201,169,110,0.25);
+      color: var(--accent);
+    }
+    .export-btn.export-btn-primary:hover {
+      background: var(--accent-dim);
+      border-color: rgba(201,169,110,0.5);
+      box-shadow: var(--neu-shadow-sm), 0 0 12px rgba(201,169,110,0.15);
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 999;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 10px 16px;
+      background: rgba(24, 24, 27, 0.95);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(92, 184, 138, 0.35);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.7), 2px 2px 8px rgba(0,0,0,0.5);
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text);
+      opacity: 0;
+      transform: translateY(12px);
+      pointer-events: none;
+      transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
     }
 
     /* ─── Refusal Banner ──────────────────────────────────────────── */
@@ -823,15 +1003,45 @@
       <!-- Answer body -->
       <div id="answer-body"></div>
 
-      <!-- Citations row -->
-      <div class="citations-row">
-        <div class="citations-label">
+      <!-- Practice Problems (Phase 4) -->
+      <div id="practice-section" class="practice-section hidden">
+        <div class="practice-label">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
+            <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
           </svg>
-          Sources:
+          Practice:
         </div>
-        <div id="citations-list"></div>
+        <div id="practice-list" class="practice-list"></div>
+      </div>
+
+      <!-- Bottom Row: Sources & Action Center -->
+      <div class="banner-bottom-row">
+        <!-- Citations row -->
+        <div class="citations-row">
+          <div class="citations-label">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
+            </svg>
+            Sources:
+          </div>
+          <div id="citations-list"></div>
+        </div>
+
+        <!-- Export Action Center (Phase 4) -->
+        <div class="export-actions-row">
+          <button id="copy-md-btn" class="export-btn" onclick="copyMarkdownCard()" title="Copy Obsidian markdown to clipboard">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+            <span>Copy Markdown</span>
+          </button>
+          <button id="export-md-btn" class="export-btn export-btn-primary" onclick="exportObsidianCard()" title="Download Obsidian-compatible .md card">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            <span>Export to Markdown / Obsidian</span>
+          </button>
+        </div>
       </div>
 
     </div>
@@ -962,8 +1172,10 @@
       player: null,
       playerReady: false,
       currentVideoId: null,
+      activeCitation: null,
       activeSegments: [],
       syncTimer: null,
+      toastTimer: null,
       activeSegIdx: -1,
       lastData: null,
     };
@@ -1114,29 +1326,57 @@
       document.getElementById('answer-meta').textContent =
         `${data.tokens_used} tok · ${data.latency_ms}ms · Δ${data.retrieval_distance}`;
 
-      // Complexity
+      // Complexity (Enhanced Phase 4)
       const cr = document.getElementById('complexity-row');
       cr.innerHTML = '';
       if (data.complexity_badge) {
         const b = data.complexity_badge;
         cr.innerHTML = `
-          <span class="badge-pill time">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            ${esc(b.time_complexity)}
+          <span class="badge-pill time" title="Time Complexity">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span>Time: ${esc(b.time_complexity)}</span>
           </span>
-          <span class="badge-pill space">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M16 1v4M8 1v4M4 9h16"/></svg>
-            ${esc(b.space_complexity)}
+          <span class="badge-pill space" title="Space Complexity">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M16 1v4M8 1v4M4 9h16"/></svg>
+            <span>Space: ${esc(b.space_complexity)}</span>
           </span>
-          <span class="badge-pill pattern">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-            ${esc(b.pattern)}
+          <span class="badge-pill pattern" title="Algorithmic Pattern">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            <span>Pattern: ${esc(b.pattern)}</span>
           </span>
         `;
       }
 
       // Body
       document.getElementById('answer-body').innerHTML = fmtMd(data.answer, data.citations);
+
+      // Practice Problems (Phase 4)
+      const pSec = document.getElementById('practice-section');
+      const pList = document.getElementById('practice-list');
+      if (pSec && pList) {
+        pList.innerHTML = '';
+        if (data.practice_problems && data.practice_problems.length) {
+          pSec.classList.remove('hidden');
+          data.practice_problems.forEach(p => {
+            const a = document.createElement('a');
+            a.href = p.url;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            a.className = 'problem-badge';
+            const platClass = (p.platform || 'leetcode').toLowerCase();
+            const diffClass = (p.difficulty || 'medium').toLowerCase();
+            a.innerHTML = `
+              <span class="platform-pill ${platClass}">${esc(p.platform)}</span>
+              <span>${esc(p.title)}</span>
+              <span class="diff-pill ${diffClass}">${esc(p.difficulty)}</span>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.6"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            `;
+            pList.appendChild(a);
+          });
+        } else {
+          pSec.classList.add('hidden');
+        }
+      }
 
       // Citations
       const cl = document.getElementById('citations-list');
@@ -1165,6 +1405,126 @@
       });
       playLecture(citation.video_id, citation.seek_sec, citation.title);
       renderTranscript(citation.segments, citation.seek_sec);
+    }
+
+    /* ── Obsidian Markdown Generator (Phase 4) ──────────────────── */
+    function generateObsidianMarkdown() {
+      if (!S.lastData) return null;
+      const d = S.lastData;
+      const b = d.complexity_badge || { time_complexity: 'N/A', space_complexity: 'N/A', pattern: 'N/A' };
+      const q = (document.getElementById('query-input').value || d.query_processed || 'DSA Concept').trim();
+      
+      let topic = q;
+      if (b.pattern && b.pattern !== 'N/A' && !topic.toLowerCase().includes(b.pattern.toLowerCase())) {
+        topic = `${b.pattern}: ${topic}`;
+      }
+      
+      const cit = S.activeCitation || (d.citations && d.citations[0]) || {};
+      const lectureTitle = cit.title || 'DSA Lecture';
+      const timestampUrl = cit.youtube_url || (cit.video_id ? `https://www.youtube.com/watch?v=${cit.video_id}&t=${Math.floor(cit.start_sec || 0)}s` : '');
+      const timeStr = fmtSec(cit.start_sec || 0);
+      const today = new Date().toISOString().split('T')[0];
+
+      // Clean answer text: remove badge if present
+      let cleanAnswer = (d.answer || '')
+        .replace(/\[Time:[^\]]+\]/gi, '')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+
+      // Practice problems list
+      let practiceMd = 'None identified.';
+      if (d.practice_problems && d.practice_problems.length) {
+        practiceMd = d.practice_problems.map(p => `- [${p.title}](${p.url}) (${p.difficulty})`).join('\n');
+      }
+
+      const bookmarkMd = timestampUrl 
+        ? `- [Watch Explanation at ${timeStr}](${timestampUrl})` 
+        : `- Lecture: ${lectureTitle}`;
+
+      return [
+        '---',
+        `topic: "${topic.replace(/"/g, '\\"')}"`,
+        `pattern: "${b.pattern}"`,
+        `time_complexity: "${b.time_complexity}"`,
+        `space_complexity: "${b.space_complexity}"`,
+        `lecture: "${lectureTitle.replace(/"/g, '\\"')}"`,
+        `timestamp_url: "${timestampUrl}"`,
+        `created: "${today}"`,
+        '---',
+        '',
+        `# ${topic}`,
+        '',
+        '### Core Logic',
+        cleanAnswer,
+        '',
+        '### Practice Problems',
+        practiceMd,
+        '',
+        '### Lecture Bookmark',
+        bookmarkMd,
+        '',
+      ].join('\n');
+    }
+
+    function copyMarkdownCard() {
+      const md = generateObsidianMarkdown();
+      if (!md) return;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(md).then(() => {
+          showToast('📋 Revision card copied to clipboard!');
+        }).catch(() => {
+          _fallbackCopy(md);
+        });
+      } else {
+        _fallbackCopy(md);
+      }
+    }
+
+    function _fallbackCopy(text) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        showToast('📋 Revision card copied to clipboard!');
+      } catch (e) {
+        showToast('❌ Copy failed');
+      }
+      document.body.removeChild(ta);
+    }
+
+    function exportObsidianCard() {
+      const md = generateObsidianMarkdown();
+      if (!md) return;
+      const q = (document.getElementById('query-input').value || 'dsa-revision').trim();
+      const slug = q.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 40) || 'revision';
+      const filename = `revision-${slug}-${new Date().toISOString().split('T')[0]}.md`;
+
+      const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast(`📥 Downloaded: ${filename}`);
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      const text = document.getElementById('toast-text');
+      if (!toast || !text) return;
+      text.textContent = msg;
+      toast.classList.add('show');
+      clearTimeout(S.toastTimer);
+      S.toastTimer = setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2600);
     }
 
     /* ── Render Refusal ─────────────────────────────────────────── */
@@ -1307,6 +1667,14 @@
       })
       .catch(() => {});
   </script>
+
+  <!-- Toast Notification (Phase 4) -->
+  <div id="toast" class="toast">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20 6L9 17l-5-5"/>
+    </svg>
+    <span id="toast-text">Revision card copied to clipboard!</span>
+  </div>
 
 </body>
 </html>

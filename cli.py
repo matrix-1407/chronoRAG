@@ -319,6 +319,24 @@ def ask(
             )
         console.print(cite_table)
 
+    # Practice Problems (Phase 4)
+    if resp.practice_problems:
+        console.print()
+        prob_table = Table(title="Practice Problems", show_lines=False, box=None)
+        prob_table.add_column("Platform", width=10, style="bold cyan")
+        prob_table.add_column("Problem", style="white")
+        prob_table.add_column("Difficulty", width=10)
+        prob_table.add_column("URL", style="blue underline")
+        for p in resp.practice_problems:
+            diff_style = "green" if p.difficulty == "Easy" else ("yellow" if p.difficulty == "Medium" else "red")
+            prob_table.add_row(
+                p.platform,
+                p.title,
+                f"[{diff_style}]{p.difficulty}[/]",
+                p.url,
+            )
+        console.print(prob_table)
+
     console.print(
         f"\n[dim]Tokens: {resp.tokens_used} | "
         f"Distance: {resp.retrieval_distance} | "
