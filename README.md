@@ -10,7 +10,7 @@
 [![FastEmbed](https://img.shields.io/badge/FastEmbed-BM25-orange.svg)](https://github.com/qdrant/fastembed)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-**ChronoRAG** is a timestamp-accurate Retrieval-Augmented Generation (RAG) platform built on a curriculum of 126 video lectures. It combines **Dense Semantic Embeddings** (`bge-m3`) with **FastEmbed Sparse Lexical Embeddings** (`Qdrant/bm25`), fused using **Reciprocal Rank Fusion (RRF)** in Qdrant Cloud. It pinpoints exact concept moments, answers conceptual queries in concise English with natural pedagogical Hinglish nuances, and jumps straight to the relevant lecture timestamps with video player synchronization.
+**ChronoRAG** is a timestamp-accurate Retrieval-Augmented Generation (RAG) platform built on a curriculum of 126 video lectures. It combines **Dense Semantic Embeddings** (`bge-m3`) with **FastEmbed Sparse Lexical Embeddings** (`Qdrant/bm25`), fused using **Reciprocal Rank Fusion (RRF)** in Qdrant Cloud. It pinpoints exact concept moments, answers conceptual queries in concise English with natural pedagogical Hinglish nuances, synchronizes transcript playback live with YouTube, maps queries to curated LeetCode/GFG practice problems, and exports revision cards directly to Obsidian.
 
 ---
 
@@ -21,6 +21,7 @@
 - [Key Highlights](#-key-highlights)
 - [System Architecture](#-system-architecture)
 - [Retrieval & Synthesis Flow](#-retrieval--synthesis-flow)
+- [Interactive UI & Revision Station](#-interactive-ui--revision-station)
 - [Ingestion & Chunking Pipeline](#-ingestion--chunking-pipeline)
 - [Project Directory Structure](#-project-directory-structure)
 - [Quickstart & Installation](#-quickstart--installation)
@@ -35,10 +36,11 @@
 
 - **Hybrid Dense + Sparse Search (RRF)**: Merges dense semantic vectors (1024-dim `BAAI/bge-m3`) and sparse lexical vectors (`Qdrant/bm25`) through Qdrant's native `Prefetch` query pipeline and Reciprocal Rank Fusion.
 - **Timestamp-Accurate Deep Linking**: Breaks continuous lecture audio into 75-second sliding windows with a 15-second overlap and a 5-second seek rewind (`seek_sec = max(0, start_sec - 5)`), ensuring smooth concept continuity.
-- **DSA Acronym & LeetCode Normalizer**: Preprocesses queries dynamically (e.g., `LCS` $\to$ `LCS Longest Common Subsequence`, `lc 206` $\to$ `LeetCode 206`).
-- **Zero-Token Out-of-Syllabus Refusal**: A strict cosine distance cutoff (`MAX_DISTANCE = 0.5`) aborts out-of-domain queries immediately without spending LLM tokens.
-- **Concise English-First Synthesis**: Generates crisp, structured concept explanations (100–140 words max) using Google Gemini Flash, with standard time/space complexity badges (`[Time: O(...) | Space: O(...) | Pattern: ...]`).
-- **Rich Web UI & Markdown Parser**: Renders interactive inline citation jump pins (`📍 [1]`), formatted mathematical equations (LaTeX transformed into styled formula cards), and synchronized YouTube player seeking.
+- **Live Synchronized Transcript Reader**: 250ms polling loop via YouTube IFrame API highlights the active spoken sentence in real time as the video plays, auto-scrolls the active line, and allows instant click-to-seek.
+- **LeetCode & GFG Auto-Mapper (`leetcode_mapper.py`)**: 100% token-free local engine detecting explicit problem numbers (e.g. `LeetCode 53`, `LC 206`, `#33`) and mapping 20+ core DSA patterns to standard practice problems with difficulty indicators.
+- **Obsidian / Markdown Revision Card Exporter**: One-click download of `.md` revision cards formatted with Obsidian-compatible YAML frontmatter, core logic, practice problem links, and timestamped lecture bookmarks, alongside quick clipboard copying with toast feedback.
+- **Calibrated Hybrid Refusal Guard**: Calibrated cutoff (`MAX_DISTANCE = 0.46`) with sparse BM25 confirmation (`-0.025` distance bonus for true DSA terms) to reject out-of-syllabus queries (e.g., React, ML, Cooking) with 0 tokens while preventing false rejections on colloquial Hinglish queries.
+- **Neumorphism + Glassmorphism UI**: Custom vanilla CSS design system (zero external framework dependency) featuring dark charcoal surfaces (`#111113`), warm gold accents (`#c9a96e`), and distinct color-coded complexity pill badges (Emerald for Time, Sky for Space, Purple for Pattern).
 
 ---
 
@@ -49,16 +51,17 @@ The following diagram illustrates the end-to-end architecture across client inte
 ```mermaid
 flowchart TD
     subgraph Clients["Client Applications"]
-        WebUI["Web UI (Vanilla JS & YouTube Player)"]
+        WebUI["Web UI (Neumorphism + Glassmorphism / YouTube Player)"]
         CLI["CLI Tool (Typer & Rich)"]
     end
 
     subgraph Service["Backend Services (FastAPI)"]
-        API["FastAPI REST API"]
-        Pre["Query Preprocessor (DSA Acronyms)"]
-        Embed["HybridEmbedder (Dense + Sparse BM25)"]
-        Guard{"Refusal Guard (Distance Cutoff = 0.5)"}
+        API["FastAPI REST API (/api/ask)"]
+        Pre["Query Preprocessor (DSA Acronyms & LC normalizer)"]
+        Embed["HybridEmbedder (Dense bge-m3 + Sparse BM25)"]
+        Guard{"Hybrid Refusal Guard (Cutoff = 0.46 + BM25 Bonus)"}
         Synth["Synthesis Engine (Gemini 3.5 Flash)"]
+        Mapper["Practice Auto-Mapper (leetcode_mapper.py)"]
     end
 
     subgraph Storage["Vector Database"]
@@ -66,17 +69,19 @@ flowchart TD
     end
 
     WebUI -->|"POST /api/ask"| API
-    CLI -->|"tuberag find / ask"| Pre
+    CLI -->|"tuberag ask"| Pre
     API --> Pre
     Pre --> Embed
     Embed -->|"Dense & Sparse Vectors"| Qdrant
-    Qdrant -->|"Prefetch & RRF Results"| Guard
-    Guard -->|"Distance > 0.5: Refuse (0 tokens)"| API
-    Guard -->|"Distance <= 0.5: Context Chunks"| Synth
+    Qdrant -->|"Prefetch & RRF Candidates"| Guard
+    Guard -->|"Out of Syllabus: Refuse (0 tokens)"| API
+    Guard -->|"In Syllabus: Top Chunks"| Synth
     Synth -->|"Gemini Prompt & Context"| GeminiAPI["Google Gemini API"]
     GeminiAPI -->|"Concept Summary + Badge"| Synth
-    Synth --> API
-    API -->|"JSON with Video Timestamp"| WebUI
+    Synth --> Mapper
+    Mapper -->|"Practice Problems (LeetCode/GFG)"| API
+    API -->|"JSON Payload"| WebUI
+    API -->|"Rich CLI Table"| CLI
 ```
 
 ---
@@ -87,16 +92,36 @@ When a user submits a question, the query passes through normalization, dual-vec
 
 ```mermaid
 flowchart TD
-    Q["User Query<br/>(e.g., 'how does LCS work in lc 1143?')"] --> Norm["1. Query Preprocessor<br/>Expands DSA Acronyms & LeetCode references"]
+    Q["User Query<br/>(e.g., 'LCS table initialization kaise karein?')"] --> Norm["1. Query Preprocessor<br/>Expands DSA Acronyms & LeetCode references"]
     Norm --> Embed["2. Dual Embeddings<br/>Dense (bge-m3) + Sparse (FastEmbed BM25)"]
     Embed --> RRF["3. Qdrant Hybrid Search<br/>Prefetch candidates & Reciprocal Rank Fusion (RRF)"]
-    RRF --> Guard{"4. Cosine Distance Guard<br/>Is best distance <= 0.5?"}
+    RRF --> Guard{"4. Hybrid Distance Guard<br/>Dense Dist <= 0.46 (with BM25 keyword bonus)?"}
     
     Guard -->|"No: Out of Syllabus"| Refuse["Instant Refusal<br/>'Ye topic in lectures me cover nahi hua.'<br/>(0 LLM tokens spent)"]
     Guard -->|"Yes: In Syllabus"| LLM["5. Gemini 3.5 Flash Synthesis<br/>thinking_budget=0 | Concise 100-140 words"]
     
-    LLM --> Out["6. Structured Response<br/>Concept Summary + Complexity Badge + Interactive Video Pins"]
+    LLM --> Map["6. LeetCode Auto-Mapper<br/>Topic-to-practice matching (0 tokens)"]
+    Map --> Out["7. Structured Response<br/>Concept Summary + Complexity Badges + Video Pins + Practice Links"]
 ```
+
+---
+
+## 🖥 Interactive UI & Revision Station
+
+The Web UI transforms video lecture consumption into an active learning revision station:
+
+1. **Dedicated Search Zone**: Centered 50px neumorphic input with embedded send button, dual-level focus glow, character counter, and keyboard shortcuts (`Enter` to submit, `Esc` to clear).
+2. **Concept Summary & Complexity Badges**:
+   - **Time Complexity**: Styled emerald badge (`⏱ Time: O(...)`).
+   - **Space Complexity**: Styled sky blue badge (`💾 Space: O(...)`).
+   - **Algorithmic Pattern**: Styled purple badge (`🔷 Pattern: ...`).
+3. **Practice Problems**: Direct clickable badges to LeetCode and GeeksforGeeks problems matching the lecture topic with difficulty chips (`Easy`: emerald, `Medium`: amber, `Hard`: rose).
+4. **Obsidian / Markdown Exporter**:
+   - **"📋 Export to Markdown / Obsidian"**: Generates and downloads a `.md` revision card with YAML frontmatter, core intuition, practice links, and deep timestamp bookmarks.
+   - **"Copy Markdown"**: One-click clipboard copy with animated floating toast notification.
+5. **Split-Screen Synchronization**:
+   - **Left Panel (57%)**: Embedded YouTube player with live timestamp indicator and suggestion chips.
+   - **Right Panel (43%)**: Synchronized transcript highlighting the exact spoken line and smooth-scrolling as the instructor speaks. Click any line to seek immediately.
 
 ---
 
@@ -124,20 +149,21 @@ ChronoRAG/
 ├── .gitignore                 # Excludes local environments, caches, and secrets
 ├── pyproject.toml             # Python packaging, uv dependencies, and entrypoints
 ├── config.py                  # Single source of truth for validated settings
-├── models.py                  # Pydantic v2 immutable data models & schemas
+├── models.py                  # Pydantic v2 immutable data models (Citation, PracticeProblem, etc.)
 ├── preprocess.py              # DSA acronym dictionary & LeetCode query normalizer
 ├── chunk.py                   # Time-domain window chunker with repetition filtering
 ├── embed.py                   # Dense (bge-m3) and Sparse (BM25) HybridEmbedder
-├── index.py                   # Qdrant collection lifecycle, batch upsert, & RRF search
+├── index.py                   # Qdrant collection lifecycle, batch upsert, & RRF hybrid search
 ├── answer.py                  # Gemini synthesis engine, refusal guard, badge parser
-├── cli.py                     # Typer CLI (reindex, stats, search, find, ask)
+├── leetcode_mapper.py         # Deterministic LeetCode & GFG practice problem auto-mapper
+├── cli.py                     # Typer CLI (reindex, stats, find, ask)
 ├── smoke_test.py              # Automated 5-stage validation test harness
 ├── transcripts/               # 126 lecture JSON transcript files
 ├── api/
 │   ├── __init__.py
 │   └── main.py                # FastAPI REST API with lifespan model warm-up
 └── frontend/
-    └── index.html             # Single-page interface with YouTube player sync
+    └── index.html             # Single-page interface with YouTube player sync & Obsidian export
 ```
 
 ---
@@ -204,19 +230,19 @@ ChronoRAG includes a CLI built with Typer and Rich:
 | `tuberag reindex` | Chunks transcripts and uploads dense + sparse vectors to Qdrant | `uv run python cli.py reindex --force` |
 | `tuberag stats` | Displays collection size, vector dimensions, and chunk ratios | `uv run python cli.py stats` |
 | `tuberag find` | Executes hybrid search and displays RRF, dense, and sparse scores | `uv run python cli.py find "BFS traversal in graphs"` |
-| `tuberag ask` | Runs the full RAG pipeline: retrieval, distance cutoff, and Gemini answer | `uv run python cli.py ask "Dijkstra algorithm kaise kaam karta hai?"` |
+| `tuberag ask` | Runs the full RAG pipeline: retrieval, distance cutoff, Gemini answer & practice problems | `uv run python cli.py ask "Kadane algorithm kaise kaam karta hai?"` |
 
 ---
 
 ## 🌐 API Endpoints
 
 ### `POST /api/ask`
-Full hybrid RAG synthesis pipeline.
+Full hybrid RAG synthesis pipeline with practice problem mapping.
 
 **Request Payload:**
 ```json
 {
-  "query": "how does binary search work?",
+  "query": "LCS table initialization kaise karein?",
   "top_k": 5
 }
 ```
@@ -224,28 +250,53 @@ Full hybrid RAG synthesis pipeline.
 **Response Payload:**
 ```json
 {
-  "answer": "Binary Search is a divide-and-conquer algorithm used on sorted arrays [1]...",
+  "answer": "**Core Intuition:** Longest Common Subsequence (LCS) me hum do strings ke characters ko compare karte hain [1]. Tabulation table (DP table) initialize karte waqt hum base cases ko 0 set karte hain [1]...",
   "complexity_badge": {
-    "time_complexity": "O(log N)",
-    "space_complexity": "O(1)",
-    "pattern": "Divide and Conquer / Two Pointers"
+    "time_complexity": "O(N * M)",
+    "space_complexity": "O(N * M)",
+    "pattern": "DP Grid / Tabulation"
   },
-  "citations": [
+  "practice_problems": [
     {
-      "video_id": "ABC123xyz",
-      "title": "Lecture 12 - Binary Search Fundamentals",
-      "start_sec": 340.0,
-      "seek_sec": 335.0,
-      "youtube_url": "https://www.youtube.com/watch?v=ABC123xyz&t=335s",
-      "chunk_preview": "jab array sorted ho tab hum middle element check karte hain...",
-      "distance": 0.284
+      "title": "LeetCode #1143: Longest Common Subsequence",
+      "platform": "LeetCode",
+      "url": "https://leetcode.com/problems/longest-common-subsequence/",
+      "difficulty": "Medium"
+    },
+    {
+      "title": "LeetCode #516: Longest Palindromic Subsequence",
+      "platform": "LeetCode",
+      "url": "https://leetcode.com/problems/longest-palindromic-subsequence/",
+      "difficulty": "Medium"
+    },
+    {
+      "title": "GFG: Longest Common Subsequence",
+      "platform": "GFG",
+      "url": "https://www.geeksforgeeks.org/problems/longest-common-subsequence-1587115620/1",
+      "difficulty": "Medium"
     }
   ],
-  "retrieval_distance": 0.284,
-  "tokens_used": 194,
+  "citations": [
+    {
+      "video_id": "YkM-xfnZ4DY",
+      "title": "DP in 15 Days Episode 12 : LCS In 20 Minutes",
+      "start_sec": 0.0,
+      "end_sec": 75.0,
+      "seek_sec": 0.0,
+      "youtube_url": "https://www.youtube.com/watch?v=YkM-xfnZ4DY&t=0s",
+      "chunk_preview": "Today's question is the longest common sub-sequence...",
+      "distance": 0.454,
+      "segments": [
+        {"start": 0.0, "end": 4.5, "text": "Today's question is the longest common sub-sequence."},
+        {"start": 4.5, "end": 9.2, "text": "Common. Now see, the longest common subsequence..."}
+      ]
+    }
+  ],
+  "retrieval_distance": 0.454,
+  "tokens_used": 210,
   "is_refused": false,
-  "query_processed": "how does binary search work?",
-  "latency_ms": 4120
+  "query_processed": "LCS Longest Common Subsequence table initialization kaise karein?",
+  "latency_ms": 3850
 }
 ```
 
@@ -256,13 +307,13 @@ Returns point counts, chunk counts, and collection health metrics.
 
 ## 🛡 Guardrails & Token Optimization
 
-1. **Deterministic Refusal Cutoff (`MAX_DISTANCE = 0.5`)**:
-   - The cosine distance between the user query and the best dense retrieval match is evaluated before invoking Gemini.
-   - If the best match distance exceeds `0.5`, the query is flagged as out-of-syllabus and immediately returns `"Ye topic in lectures me cover nahi hua."` with `tokens_used: 0`.
+1. **Hybrid Refusal Cutoff (`MAX_DISTANCE = 0.46` + BM25 Bonus)**:
+   - Evaluates dense cosine distance alongside sparse BM25 scores.
+   - Genuine DSA queries with technical lecture vocabulary receive a `-0.025` distance bonus, preventing false rejections on conversational Hinglish phrasing while strictly blocking non-DSA queries (e.g., React, ML, Cooking) with `tokens_used: 0`.
 2. **Zero-Thinking Budget (`thinking_budget = 0`)**:
-   - For Gemini models with thinking mode enabled by default, internal thought tokens can exhaust token limits and cause truncated answers. ChronoRAG configures `thinking_budget = 0`, keeping answers tight, fully formed, and returned in ~4-5s.
+   - Disables excessive internal chain-of-thought tokens, returning crisp, focused answers in ~3–4 seconds.
 3. **Chunk Deduping & Repetition Filter**:
-   - Whisper transcription loops (e.g. repeated words or silence loops) are discarded before embedding using a lexical compression ratio filter (`unique_ratio < 0.35`).
+   - Whisper transcription loops (repeated words or silence loops) are discarded before embedding using a lexical compression ratio filter (`unique_ratio < 0.35`).
 
 ---
 
@@ -279,7 +330,7 @@ All settings can be customized via `.env` or system environment variables:
 | `YTRAG_EMBED_MODEL` | `BAAI/bge-m3` | Dense embedding model name (1024-dim) |
 | `YTRAG_SPARSE_MODEL` | `Qdrant/bm25` | Sparse lexical model name via FastEmbed |
 | `YTRAG_GEMINI_MODEL` | `gemini-3.5-flash` | Gemini synthesis model |
-| `YTRAG_MAX_DISTANCE` | `0.5` | Cosine distance threshold for out-of-domain refusal |
+| `YTRAG_MAX_DISTANCE` | `0.46` | Cosine distance threshold for out-of-domain refusal |
 | `YTRAG_CHUNK_SECONDS` | `75` | Target chunk window length in seconds |
 | `YTRAG_CHUNK_OVERLAP` | `15` | Overlap between adjacent chunk windows in seconds |
 | `YTRAG_LINK_REWIND` | `5` | Playback seek buffer (seconds) before chunk start |
