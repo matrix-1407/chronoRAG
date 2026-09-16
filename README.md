@@ -6,7 +6,7 @@
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![Qdrant](https://img.shields.io/badge/Qdrant-Cloud-red.svg?logo=qdrant&logoColor=white)](https://qdrant.tech)
-[![Gemini Flash](https://img.shields.io/badge/Gemini-2.5%20Flash-4285F4.svg?logo=google&logoColor=white)](https://ai.google.dev)
+[![Gemini Flash](https://img.shields.io/badge/Gemini-3.6%20Flash-4285F4.svg?logo=google&logoColor=white)](https://ai.google.dev)
 [![FastEmbed](https://img.shields.io/badge/FastEmbed-BM25-orange.svg)](https://github.com/qdrant/fastembed)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
@@ -60,7 +60,7 @@ flowchart TD
         Pre["Query Preprocessor (DSA Acronyms & LC normalizer)"]
         Embed["HybridEmbedder (Dense bge-m3 + Sparse BM25)"]
         Guard{"Hybrid Refusal Guard (Cutoff = 0.46 + BM25 Bonus)"}
-        Synth["Synthesis Engine (Gemini 3.5 Flash)"]
+        Synth["Synthesis Engine (Gemini 3.6 Flash)"]
         Mapper["Practice Auto-Mapper (leetcode_mapper.py)"]
     end
 
@@ -98,7 +98,7 @@ flowchart TD
     RRF --> Guard{"4. Hybrid Distance Guard<br/>Dense Dist <= 0.46 (with BM25 keyword bonus)?"}
     
     Guard -->|"No: Out of Syllabus"| Refuse["Instant Refusal<br/>'Ye topic in lectures me cover nahi hua.'<br/>(0 LLM tokens spent)"]
-    Guard -->|"Yes: In Syllabus"| LLM["5. Gemini 3.5 Flash Synthesis<br/>thinking_budget=0 | Concise 100-140 words"]
+    Guard -->|"Yes: In Syllabus"| LLM["5. Gemini 3.6 Flash Synthesis<br/>thinking_budget=0 | Concise 100-140 words"]
     
     LLM --> Map["6. LeetCode Auto-Mapper<br/>Topic-to-practice matching (0 tokens)"]
     Map --> Out["7. Structured Response<br/>Concept Summary + Complexity Badges + Video Pins + Practice Links"]
@@ -122,6 +122,10 @@ The Web UI transforms video lecture consumption into an active learning revision
 5. **Split-Screen Synchronization**:
    - **Left Panel (57%)**: Embedded YouTube player with live timestamp indicator and suggestion chips.
    - **Right Panel (43%)**: Synchronized transcript highlighting the exact spoken line and smooth-scrolling as the instructor speaks. Click any line to seek immediately.
+6. **DSA Pattern-Wise Roadmap Tracker**:
+   - **14 Core Patterns (01 to 14)**: Structured curriculum covering Arrays & Hashing, Two Pointers, Sliding Window, Stack, Binary Search, Linked List, Trees, Heaps, Backtracking, Graphs, 1D DP, 2D DP, Greedy, and Bit Manipulation.
+   - **Interactive Tracking & Persistence**: Checkbox progress saved to `localStorage` with real-time percentage indicators and category-wise `completed / total` counter badges.
+   - **Seamless Navigation**: Horizontal pattern filter pills, instant topic search, hover-aware keyboard navigation (`ArrowUp` / `ArrowDown`), sticky section headers, and one-click "Ask ChronoRAG" buttons to instantly query any roadmap topic.
 
 ---
 
@@ -356,7 +360,7 @@ All settings can be customized via `.env` or system environment variables:
 | `YTRAG_COLLECTION` | `dsa_lectures_1024` | Qdrant collection name |
 | `YTRAG_EMBED_MODEL` | `BAAI/bge-m3` | Dense embedding model name (1024-dim) |
 | `YTRAG_SPARSE_MODEL` | `Qdrant/bm25` | Sparse lexical model name via FastEmbed |
-| `YTRAG_GEMINI_MODEL` | `gemini-2.5-flash` | Gemini synthesis model |
+| `YTRAG_GEMINI_MODEL` | `gemini-3.6-flash` | Gemini synthesis model |
 | `YTRAG_MAX_DISTANCE` | `0.46` | Cosine distance threshold for out-of-domain refusal |
 | `YTRAG_TOP_K_DENSE` | `25` | Dense candidates prefetch pool for RRF |
 | `YTRAG_TOP_K_SPARSE` | `25` | Sparse candidates prefetch pool for RRF |

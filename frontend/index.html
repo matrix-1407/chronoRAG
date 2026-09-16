@@ -196,6 +196,49 @@
       border-radius: 50%;
       background: var(--green);
     }
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .header-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 12px;
+      border-radius: var(--radius-xs);
+      background: var(--surface-2);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--neu-shadow-sm);
+      font-size: 11.5px;
+      font-weight: 600;
+      font-family: inherit;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .header-btn:hover {
+      border-color: rgba(201,169,110,0.4);
+      color: var(--accent);
+      transform: translateY(-1px);
+      box-shadow: var(--neu-shadow-sm), 0 0 10px rgba(201,169,110,0.12);
+    }
+    .header-btn.active {
+      background: var(--surface-3);
+      border-color: rgba(201,169,110,0.5);
+      color: var(--accent);
+    }
+    .header-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 99px;
+      background: rgba(201,169,110,0.15);
+      color: var(--accent);
+      border: 1px solid rgba(201,169,110,0.25);
+    }
 
     /* ─── Search Zone ─────────────────────────────────────────────── */
     #search-zone {
@@ -326,25 +369,41 @@
     }
     #char-count.warn { color: #c97070; }
 
-    /* ─── Answer Banner ───────────────────────────────────────────── */
+    /* ─── Answer Banner (Optimized 2-Column Layout) ───────────────── */
     #answer-banner {
       flex-shrink: 0;
       display: none;
-      background: rgba(17,17,19,0.85);
+      background: rgba(17,17,19,0.88);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
       border-bottom: 1px solid var(--glass-border);
-      padding: 14px 24px;
+      padding: 10px 24px 12px 24px;
       animation: fadeUp 0.25s ease both;
+      transition: padding 0.2s ease;
     }
+    #answer-banner.collapsed {
+      padding: 7px 24px;
+    }
+    #answer-banner.collapsed .banner-body-wrap {
+      display: none;
+    }
+
     .banner-inner {
-      max-width: 1400px; margin: 0 auto;
-      display: flex; flex-direction: column; gap: 12px;
+      max-width: 1440px; margin: 0 auto;
+      display: flex; flex-direction: column; gap: 8px;
     }
     .banner-top-row {
       display: flex; align-items: center;
       justify-content: space-between;
-      flex-wrap: wrap; gap: 8px;
+      gap: 10px;
+    }
+    .banner-top-left {
+      display: flex; align-items: center; gap: 10px;
+      flex-wrap: wrap;
+    }
+    .banner-top-right {
+      display: flex; align-items: center; gap: 8px;
+      flex-shrink: 0;
     }
     .banner-label {
       display: flex; align-items: center; gap: 7px;
@@ -357,20 +416,37 @@
       border-radius: 50%; background: var(--accent);
     }
     #answer-meta {
-      font-size: 11px; font-family: 'JetBrains Mono', monospace;
+      font-size: 10.5px; font-family: 'JetBrains Mono', monospace;
       color: var(--text-dim);
     }
+    .banner-toggle-btn {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 8px;
+      border-radius: var(--radius-xs);
+      background: var(--surface-2);
+      border: 1px solid var(--glass-border);
+      font-size: 10.5px; font-weight: 600;
+      color: var(--text-dim);
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+    .banner-toggle-btn:hover {
+      color: var(--accent);
+      border-color: rgba(201,169,110,0.4);
+    }
+
     /* Complexity pills (Enhanced Phase 4) */
     .complexity-row {
       display: flex; flex-wrap: wrap; gap: 6px;
     }
     .badge-pill {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 4px 11px;
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 9px;
       border-radius: var(--radius-xs);
-      font-size: 11px; font-family: 'JetBrains Mono', monospace;
+      font-size: 10.5px; font-family: 'JetBrains Mono', monospace;
       font-weight: 600;
-      box-shadow: 2px 2px 6px rgba(0,0,0,0.5), inset 1px 1px 2px rgba(255,255,255,0.04);
+      box-shadow: 2px 2px 5px rgba(0,0,0,0.45);
       transition: transform 0.15s, box-shadow 0.15s;
     }
     .badge-pill:hover {
@@ -380,26 +456,56 @@
       color: #10b981;
       background: rgba(16, 185, 129, 0.09);
       border: 1px solid rgba(16, 185, 129, 0.3);
-      box-shadow: 2px 2px 6px rgba(0,0,0,0.5), 0 0 10px rgba(16, 185, 129, 0.12);
     }
     .badge-pill.space {
       color: #38bdf8;
       background: rgba(56, 189, 248, 0.09);
       border: 1px solid rgba(56, 189, 248, 0.3);
-      box-shadow: 2px 2px 6px rgba(0,0,0,0.5), 0 0 10px rgba(56, 189, 248, 0.12);
     }
     .badge-pill.pattern {
       color: #c084fc;
       background: rgba(168, 85, 247, 0.09);
       border: 1px solid rgba(168, 85, 247, 0.3);
-      box-shadow: 2px 2px 6px rgba(0,0,0,0.5), 0 0 10px rgba(168, 85, 247, 0.12);
     }
     .badge-pill svg { opacity: 0.9; flex-shrink: 0; }
 
-    /* Answer body text */
+    /* 2-Column Responsive Banner Grid */
+    .banner-body-wrap {
+      width: 100%;
+    }
+    .banner-grid {
+      display: grid;
+      grid-template-columns: 1fr 390px;
+      gap: 16px;
+      align-items: start;
+    }
+    @media (max-width: 1100px) {
+      .banner-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+    }
+
+    .banner-col-main {
+      min-width: 0;
+    }
+    .banner-col-side {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-xs);
+      padding: 8px 12px;
+    }
+
+    /* Answer body text (bounded with custom scrollbar) */
     #answer-body {
-      font-size: 13px; color: var(--text-muted);
-      line-height: 1.7; max-width: 940px;
+      font-size: 12.5px; color: var(--text-muted);
+      line-height: 1.6;
+      max-height: 150px;
+      overflow-y: auto;
+      padding-right: 8px;
     }
     #answer-body strong { color: var(--text); font-weight: 600; }
     #answer-body code {
@@ -426,17 +532,16 @@
     .practice-section {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       flex-wrap: wrap;
-      padding: 6px 0 2px 0;
     }
     .practice-label {
-      font-size: 10.5px;
+      font-size: 10px;
       color: var(--text-dim);
       font-weight: 600;
       display: flex;
       align-items: center;
-      gap: 5px;
+      gap: 4px;
       flex-shrink: 0;
       text-transform: uppercase;
       letter-spacing: 0.06em;
@@ -444,36 +549,35 @@
     .practice-list {
       display: flex;
       flex-wrap: wrap;
-      gap: 7px;
+      gap: 6px;
       align-items: center;
     }
     .problem-badge {
       display: inline-flex;
       align-items: center;
-      gap: 7px;
-      padding: 4px 10px 4px 8px;
+      gap: 6px;
+      padding: 3px 8px 3px 6px;
       border-radius: var(--radius-xs);
       background: var(--surface-2);
       border: 1px solid var(--glass-border);
       box-shadow: var(--neu-shadow-sm);
-      font-size: 11px;
+      font-size: 10.5px;
       font-family: inherit;
       color: var(--text-muted);
       text-decoration: none;
-      transition: border-color 0.15s, color 0.15s, transform 0.12s, box-shadow 0.15s;
+      transition: border-color 0.15s, color 0.15s, transform 0.12s;
     }
     .problem-badge:hover {
       border-color: rgba(201,169,110,0.4);
       color: var(--text);
       transform: translateY(-1px);
-      box-shadow: var(--neu-shadow-sm), 0 0 10px rgba(201,169,110,0.12);
     }
     .platform-pill {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 9.5px;
+      font-size: 9px;
       font-weight: 700;
-      padding: 1px 5px;
-      border-radius: 4px;
+      padding: 1px 4px;
+      border-radius: 3px;
     }
     .platform-pill.leetcode {
       background: rgba(234, 88, 12, 0.15);
@@ -487,10 +591,10 @@
     }
     .diff-pill {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 9.5px;
+      font-size: 9px;
       font-weight: 600;
-      padding: 1px 5px;
-      border-radius: 4px;
+      padding: 1px 4px;
+      border-radius: 3px;
     }
     .diff-pill.easy {
       background: rgba(16, 185, 129, 0.12);
@@ -505,36 +609,37 @@
       color: #f43f5e;
     }
 
-    /* Bottom Row: Citations & Export Action Center */
-    .banner-bottom-row {
+    /* Citations in side column */
+    .citations-row {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 12px;
-      padding-top: 8px;
-      border-top: 1px solid rgba(255, 255, 255, 0.05);
-    }
-    .citations-row {
-      display: flex; align-items: center; gap: 8px;
+      gap: 6px;
       flex-wrap: wrap;
     }
     .citations-label {
-      font-size: 11px; color: var(--text-dim);
-      font-weight: 500; flex-shrink: 0;
-      display: flex; align-items: center; gap: 5px;
+      font-size: 10px; color: var(--text-dim);
+      font-weight: 600; flex-shrink: 0;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      display: flex; align-items: center; gap: 4px;
+    }
+    #citations-list {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
     }
     .cite-btn {
-      display: flex; align-items: center; gap: 6px;
-      padding: 5px 11px;
+      display: flex; align-items: center; gap: 5px;
+      padding: 3px 8px;
       border-radius: var(--radius-xs);
       background: var(--surface-2);
       border: 1px solid var(--glass-border);
       box-shadow: var(--neu-shadow-sm);
-      font-size: 11px; font-weight: 500; font-family: inherit;
+      font-size: 10.5px; font-weight: 500; font-family: inherit;
       color: var(--text-muted); cursor: pointer;
-      transition: border-color 0.15s, color 0.15s, box-shadow 0.15s;
-      max-width: 220px;
+      transition: border-color 0.15s, color 0.15s;
+      max-width: 175px;
     }
     .cite-btn:hover {
       border-color: rgba(201,169,110,0.35);
@@ -544,22 +649,20 @@
       background: var(--surface-3);
       border-color: rgba(201,169,110,0.5);
       color: var(--accent);
-      box-shadow:
-        var(--neu-shadow-sm),
-        0 0 10px rgba(201,169,110,0.12);
+      box-shadow: var(--neu-shadow-sm), 0 0 8px rgba(201,169,110,0.12);
     }
     .cite-num {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 10px; font-weight: 700;
+      font-size: 9.5px; font-weight: 700;
       color: var(--accent);
     }
     .cite-title {
       overflow: hidden; text-overflow: ellipsis;
-      white-space: nowrap; max-width: 140px;
+      white-space: nowrap; max-width: 105px;
     }
     .cite-ts {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 10px; color: var(--text-dim);
+      font-size: 9.5px; color: var(--text-dim);
       flex-shrink: 0;
     }
 
@@ -567,19 +670,20 @@
     .export-actions-row {
       display: flex;
       align-items: center;
-      gap: 8px;
-      margin-left: auto;
+      gap: 6px;
+      padding-top: 4px;
+      border-top: 1px solid rgba(255, 255, 255, 0.04);
     }
     .export-btn {
       display: flex;
       align-items: center;
-      gap: 6px;
-      padding: 5px 11px;
+      gap: 5px;
+      padding: 4px 9px;
       border-radius: var(--radius-xs);
       background: var(--surface-2);
       border: 1px solid var(--glass-border);
       box-shadow: var(--neu-shadow-sm);
-      font-size: 11px;
+      font-size: 10.5px;
       font-weight: 500;
       font-family: inherit;
       color: var(--text-muted);
@@ -600,8 +704,611 @@
     .export-btn.export-btn-primary:hover {
       background: var(--accent-dim);
       border-color: rgba(201,169,110,0.5);
-      box-shadow: var(--neu-shadow-sm), 0 0 12px rgba(201,169,110,0.15);
+      box-shadow: var(--neu-shadow-sm), 0 0 10px rgba(201,169,110,0.15);
     }
+
+    /* ─── DSA Roadmap Panel (Flat Tracker Redesign) ─── */
+    #roadmap-panel {
+      flex: 0 0 310px;
+      width: 310px;
+      height: 100%;
+      min-height: 0;
+      background: var(--surface);
+      border-right: 1px solid var(--glass-border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1), flex-basis 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s;
+      z-index: 20;
+      position: relative;
+    }
+    #roadmap-panel.collapsed {
+      flex: 0 0 0px !important;
+      width: 0px !important;
+      border-right: none;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* Roadmap Header */
+    .roadmap-header {
+      padding: 10px 12px 8px 12px;
+      border-bottom: 1px solid var(--glass-border);
+      background: rgba(17,17,19,0.8);
+      backdrop-filter: blur(14px);
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      flex-shrink: 0;
+    }
+    .roadmap-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .roadmap-title {
+      font-size: 11.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .roadmap-title svg { color: var(--accent); }
+    .roadmap-stats-pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    /* Progress bar */
+    .roadmap-progress-wrap {
+      width: 100%;
+      height: 5px;
+      background: var(--surface-3);
+      border-radius: 99px;
+      overflow: hidden;
+      position: relative;
+    }
+    .roadmap-progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent-2), var(--accent), #5cb88a);
+      border-radius: 99px;
+      transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Search filter inside roadmap */
+    .roadmap-search-row {
+      display: flex;
+      align-items: center;
+      position: relative;
+    }
+    .roadmap-search-input {
+      width: 100%;
+      height: 27px;
+      background: var(--surface-2);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-xs);
+      padding: 0 42px 0 8px;
+      font-size: 11px;
+      font-family: inherit;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .roadmap-search-input:focus {
+      border-color: rgba(201,169,110,0.5);
+    }
+    .roadmap-search-clear {
+      position: absolute;
+      right: 23px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-dim);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      cursor: pointer;
+      border: none;
+      line-height: 1;
+      padding: 0;
+    }
+    .roadmap-search-clear.visible {
+      display: flex;
+    }
+    .roadmap-search-clear:hover {
+      background: rgba(255, 255, 255, 0.2);
+      color: var(--text);
+    }
+    .roadmap-search-icon {
+      position: absolute;
+      right: 8px;
+      color: var(--text-dim);
+      pointer-events: none;
+    }
+
+    /* Quick Pattern Navigation Pills Bar */
+    .roadmap-pills-row {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      overflow-x: auto;
+      padding: 2px 1px 3px 1px;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    .roadmap-pills-row::-webkit-scrollbar {
+      display: none;
+    }
+    .roadmap-pill {
+      padding: 2px 7px;
+      border-radius: 99px;
+      background: var(--surface-2);
+      border: 1px solid var(--glass-border);
+      font-size: 9.5px;
+      font-weight: 500;
+      color: var(--text-dim);
+      white-space: nowrap;
+      cursor: pointer;
+      transition: all 0.15s;
+      flex-shrink: 0;
+      font-family: inherit;
+    }
+    .roadmap-pill:hover {
+      color: var(--text);
+      border-color: rgba(201,169,110,0.35);
+    }
+    .roadmap-pill.active {
+      background: var(--accent-dim);
+      border-color: var(--accent);
+      color: var(--accent);
+      font-weight: 600;
+      box-shadow: 0 0 8px rgba(201,169,110,0.15);
+    }
+
+    /* Controls: Expand/Collapse/Reset & Up/Down Steppers */
+    .roadmap-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 10px;
+      color: var(--text-dim);
+      padding: 0 2px;
+      gap: 6px;
+    }
+    .roadmap-toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .roadmap-tool-link {
+      color: var(--text-dim);
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 10px;
+      padding: 1px 3px;
+      border-radius: 3px;
+      font-family: inherit;
+      transition: color 0.15s;
+    }
+    .roadmap-tool-link:hover {
+      color: var(--accent);
+    }
+    .roadmap-scroll-nav {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .roadmap-nav-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      padding: 1px 6px;
+      height: 20px;
+      border-radius: 4px;
+      background: var(--surface-2);
+      border: 1px solid var(--glass-border);
+      color: var(--text-dim);
+      font-size: 9px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+    .roadmap-nav-btn:hover {
+      border-color: rgba(201,169,110,0.4);
+      color: var(--accent);
+      background: var(--surface-3);
+    }
+    .roadmap-nav-btn:active {
+      transform: translateY(1px);
+    }
+
+    /* ── Roadmap Scroll Body ── */
+    .roadmap-body {
+      flex: 1 1 0;
+      min-height: 0;
+      overflow-y: scroll !important;
+      overflow-x: hidden;
+      padding: 0 0 52px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      overscroll-behavior: contain;
+      scroll-behavior: smooth;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(201, 169, 110, 0.6) rgba(12, 12, 14, 0.9);
+    }
+    .roadmap-body::-webkit-scrollbar {
+      width: 9px;
+    }
+    .roadmap-body::-webkit-scrollbar-track {
+      background: rgba(12, 12, 14, 0.9);
+      border-radius: 99px;
+      margin: 4px 0;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .roadmap-body::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, rgba(201, 169, 110, 0.65), rgba(201, 169, 110, 0.95));
+      border-radius: 99px;
+      border: 1.5px solid var(--surface);
+    }
+    .roadmap-body::-webkit-scrollbar-thumb:hover {
+      background: #dfbe82;
+      box-shadow: 0 0 12px rgba(201, 169, 110, 0.7);
+    }
+
+    /* Floating Up / Down Scroll Controller Dock */
+    .roadmap-scroll-dock {
+      position: absolute;
+      bottom: 10px;
+      right: 14px;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      background: rgba(20, 20, 24, 0.94);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(201, 169, 110, 0.35);
+      border-radius: 99px;
+      padding: 3px 4px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7), 0 0 10px rgba(201, 169, 110, 0.15);
+      z-index: 30;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+    .dock-btn {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 1px solid var(--glass-border);
+      background: var(--surface-2);
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-family: inherit;
+      user-select: none;
+    }
+    .dock-btn:hover {
+      background: var(--surface-3);
+      color: var(--text);
+      border-color: rgba(201, 169, 110, 0.4);
+      transform: translateY(-1px);
+    }
+    .dock-btn:active {
+      transform: translateY(1px);
+    }
+    .dock-btn-accent {
+      color: var(--accent);
+      border-color: rgba(201, 169, 110, 0.3);
+    }
+    .dock-btn-accent:hover {
+      background: var(--accent-dim);
+      color: var(--accent);
+      box-shadow: 0 0 8px rgba(201, 169, 110, 0.3);
+    }
+
+    /* Difficulty Badges */
+    .diff-badge {
+      font-size: 8.5px;
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-family: 'JetBrains Mono', monospace;
+      flex-shrink: 0;
+      line-height: 1.2;
+    }
+    .diff-easy {
+      background: rgba(16, 185, 129, 0.12);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.25);
+    }
+    .diff-med {
+      background: rgba(245, 158, 11, 0.12);
+      color: #f59e0b;
+      border: 1px solid rgba(245, 158, 11, 0.25);
+    }
+    .diff-hard {
+      background: rgba(239, 68, 68, 0.12);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.25);
+    }
+
+    /* ── Tracker Section (replaces old .roadmap-pattern-card) ── */
+    .roadmap-pattern-card {
+      /* No card border — flat tracker style */
+    }
+    .roadmap-pattern-card.highlighted .tracker-section-header {
+      animation: pulseHighlight 1.5s ease;
+    }
+    @keyframes pulseHighlight {
+      0%, 100% { background: rgba(255,255,255,0.03); }
+      35%, 65% { background: rgba(201,169,110,0.1); border-left-color: var(--accent); }
+    }
+
+    /* Section Header Row */
+    .tracker-section-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 10px 7px 12px;
+      cursor: pointer;
+      user-select: none;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(17, 17, 20, 0.97);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-left: 2.5px solid rgba(201, 169, 110, 0.22);
+      transition: border-color 0.15s, background 0.15s;
+      margin-top: 2px;
+    }
+    .tracker-section-header:hover {
+      border-left-color: var(--accent);
+      background: rgba(201, 169, 110, 0.06);
+    }
+    .roadmap-pattern-card.open .tracker-section-header {
+      border-left-color: rgba(201, 169, 110, 0.55);
+    }
+
+    /* Section number badge */
+    .tracker-section-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9.5px;
+      font-weight: 700;
+      color: var(--accent);
+      background: rgba(201, 169, 110, 0.1);
+      border: 1px solid rgba(201, 169, 110, 0.2);
+      border-radius: 4px;
+      padding: 1px 5px;
+      flex-shrink: 0;
+      min-width: 22px;
+      text-align: center;
+      line-height: 1.4;
+    }
+    .roadmap-pattern-card.open .tracker-section-num {
+      background: rgba(201, 169, 110, 0.18);
+      border-color: rgba(201, 169, 110, 0.4);
+    }
+
+    .roadmap-pattern-name {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      letter-spacing: 0.01em;
+    }
+    .roadmap-pattern-card.open .roadmap-pattern-name {
+      color: var(--text);
+    }
+    .roadmap-pattern-meta {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex-shrink: 0;
+    }
+    .roadmap-pattern-count {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      padding: 1px 4px;
+      border-radius: 3px;
+      background: rgba(255,255,255,0.04);
+      color: var(--text-dim);
+      letter-spacing: 0.03em;
+    }
+    .roadmap-pattern-count.complete {
+      background: rgba(16, 185, 129, 0.12);
+      color: #10b981;
+      font-weight: 600;
+    }
+
+    /* Chevron for collapse/expand */
+    .roadmap-chevron {
+      transition: transform 0.2s ease;
+      color: rgba(255,255,255,0.18);
+      flex-shrink: 0;
+    }
+    .roadmap-pattern-card.open .roadmap-chevron {
+      transform: rotate(90deg);
+      color: rgba(201,169,110,0.5);
+    }
+
+    /* Topics container: flat rows, no border/card wrapper */
+    .roadmap-pattern-topics {
+      display: none;
+      flex-direction: column;
+    }
+    .roadmap-pattern-card.open .roadmap-pattern-topics {
+      display: flex;
+    }
+
+    /* Each topic row */
+    .roadmap-topic-item {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      padding: 0;
+      height: 32px;
+      border-bottom: 1px solid rgba(255,255,255,0.025);
+      transition: background 0.1s;
+      position: relative;
+    }
+    .roadmap-topic-item:last-child {
+      border-bottom: none;
+      margin-bottom: 4px;
+    }
+    .roadmap-topic-item:hover {
+      background: rgba(255, 255, 255, 0.035);
+    }
+    .roadmap-topic-item.completed {
+      background: rgba(16, 185, 129, 0.03);
+    }
+
+    /* Left indicator line (accent color when completed) */
+    .roadmap-topic-item::before {
+      content: '';
+      display: block;
+      width: 2.5px;
+      height: 100%;
+      background: transparent;
+      flex-shrink: 0;
+      transition: background 0.15s;
+    }
+    .roadmap-topic-item.completed::before {
+      background: rgba(16, 185, 129, 0.45);
+    }
+
+    /* Checkbox area */
+    .roadmap-chk-wrap {
+      width: 34px;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .roadmap-chk {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border: 1.5px solid rgba(255,255,255,0.2);
+      border-radius: 3px;
+      background: transparent;
+      cursor: pointer;
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+      position: relative;
+    }
+    .roadmap-chk:hover {
+      border-color: var(--accent);
+    }
+    .roadmap-chk:checked {
+      background: #10b981;
+      border-color: #10b981;
+    }
+    .roadmap-chk:checked::after {
+      content: '';
+      width: 3px;
+      height: 6.5px;
+      border: solid #0a0a0c;
+      border-width: 0 1.8px 1.8px 0;
+      transform: rotate(45deg) translate(-0.5px, -1px);
+    }
+
+    /* Topic title text */
+    .roadmap-topic-title {
+      font-size: 11px;
+      color: var(--text-muted);
+      flex: 1;
+      cursor: pointer;
+      transition: color 0.12s;
+      line-height: 1;
+      padding: 0 4px 0 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .roadmap-topic-title:hover {
+      color: var(--text);
+    }
+    .roadmap-topic-item.completed .roadmap-topic-title {
+      text-decoration: line-through;
+      color: var(--text-dim);
+      opacity: 0.6;
+    }
+
+    /* Difficulty badge — compact */
+    .diff-badge {
+      font-size: 7.5px;
+      font-weight: 700;
+      padding: 1px 4px;
+      border-radius: 3px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-family: 'JetBrains Mono', monospace;
+      flex-shrink: 0;
+      line-height: 1.3;
+      margin-right: 5px;
+    }
+    .diff-easy {
+      background: rgba(16, 185, 129, 0.1);
+      color: rgba(16, 185, 129, 0.8);
+      border: 1px solid rgba(16, 185, 129, 0.18);
+    }
+    .diff-med {
+      background: rgba(245, 158, 11, 0.1);
+      color: rgba(245, 158, 11, 0.8);
+      border: 1px solid rgba(245, 158, 11, 0.18);
+    }
+    .diff-hard {
+      background: rgba(239, 68, 68, 0.1);
+      color: rgba(239, 68, 68, 0.8);
+      border: 1px solid rgba(239, 68, 68, 0.18);
+    }
+
+    /* Ask button — appears on hover, right side */
+    .roadmap-ask-btn {
+      opacity: 0;
+      background: transparent;
+      border: none;
+      color: rgba(201, 169, 110, 0.6);
+      cursor: pointer;
+      padding: 0 10px 0 6px;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.12s, color 0.12s;
+      flex-shrink: 0;
+    }
+    .roadmap-topic-item:hover .roadmap-ask-btn {
+      opacity: 1;
+    }
+    .roadmap-ask-btn:hover {
+      color: var(--accent);
+    }
+
 
     /* Toast Notification */
     .toast {
@@ -664,20 +1371,23 @@
     #workspace {
       flex: 1; display: flex; overflow: hidden;
       min-height: 0;
+      position: relative;
     }
 
-    /* ─── Left: Player Panel ──────────────────────────────────────── */
+    /* ─── Center: Player Panel ────────────────────────────────────── */
     #player-panel {
-      flex: 0 0 57%;
+      flex: 1 1 0;
+      min-width: 0;
       display: flex; flex-direction: column;
       background: var(--base);
       border-right: 1px solid var(--glass-border);
-      overflow-y: auto; padding: 20px;
-      gap: 16px;
+      overflow-y: auto; padding: 16px 20px;
+      gap: 12px;
     }
 
     .video-shell {
       width: 100%;
+      max-height: calc(100vh - 270px);
       aspect-ratio: 16 / 9;
       border-radius: var(--radius);
       overflow: hidden;
@@ -685,7 +1395,7 @@
       position: relative;
       box-shadow:
         0 0 0 1px var(--glass-border),
-        6px 6px 20px rgba(0,0,0,0.65),
+        6px 6px 22px rgba(0,0,0,0.7),
         -2px -2px 8px rgba(255,255,255,0.03);
     }
     #player { width: 100%; height: 100%; }
@@ -746,16 +1456,16 @@
     /* Suggestion chips */
     .suggestions-section {
       border-top: 1px solid var(--glass-border);
-      padding-top: 16px;
+      padding-top: 12px;
     }
     .suggestions-label {
       font-size: 10px; font-weight: 600; letter-spacing: 0.08em;
       text-transform: uppercase; color: var(--text-dim);
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
-    .chips-row { display: flex; flex-wrap: wrap; gap: 7px; }
+    .chips-row { display: flex; flex-wrap: wrap; gap: 6px; }
     .chip {
-      padding: 6px 13px;
+      padding: 5px 11px;
       border-radius: var(--radius-xs);
       background: var(--surface-2);
       border: 1px solid var(--glass-border);
@@ -776,7 +1486,8 @@
 
     /* ─── Right: Transcript Panel ────────────────────────────────── */
     #transcript-panel {
-      flex: 0 0 43%;
+      flex: 0 0 380px;
+      width: 380px;
       display: flex; flex-direction: column;
       background: var(--surface);
       overflow: hidden;
@@ -923,10 +1634,20 @@
       <div class="brand-sep"></div>
       <div class="brand-sub">Timestamp-Accurate DSA Intelligence</div>
     </div>
-    <!-- Stats -->
-    <div class="stats-pill">
-      <span class="status-dot breathe"></span>
-      <span id="stat-text">4,140 chunks · 126 videos</span>
+    <!-- Right Actions & Stats -->
+    <div class="header-right">
+      <button id="roadmap-toggle-btn" class="header-btn active" onclick="toggleRoadmap()" title="Toggle DSA Pattern Roadmap">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 11 12 14 22 4"></polyline>
+          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+        </svg>
+        <span>DSA Roadmap</span>
+        <span id="header-roadmap-badge" class="header-badge">0/70</span>
+      </button>
+      <div class="stats-pill">
+        <span class="status-dot breathe"></span>
+        <span id="stat-text">4,140 chunks · 126 videos</span>
+      </div>
     </div>
   </header>
 
@@ -985,62 +1706,77 @@
   </div>
 
   <!-- ══════════════════════════════════════════════════════════════ -->
-  <!-- 2. ANSWER BANNER                                              -->
+  <!-- 2. ANSWER BANNER (2-Column Optimized Layout)                  -->
   <!-- ══════════════════════════════════════════════════════════════ -->
   <div id="answer-banner">
     <div class="banner-inner">
 
-      <!-- Top row: label + complexity + meta -->
+      <!-- Top row: label + complexity + meta + collapse toggle -->
       <div class="banner-top-row">
-        <div class="banner-label">
-          <span class="banner-label-dot"></span>
-          Concept Summary
-        </div>
-        <div id="complexity-row" class="complexity-row"></div>
-        <span id="answer-meta"></span>
-      </div>
-
-      <!-- Answer body -->
-      <div id="answer-body"></div>
-
-      <!-- Practice Problems (Phase 4) -->
-      <div id="practice-section" class="practice-section hidden">
-        <div class="practice-label">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
-          </svg>
-          Practice:
-        </div>
-        <div id="practice-list" class="practice-list"></div>
-      </div>
-
-      <!-- Bottom Row: Sources & Action Center -->
-      <div class="banner-bottom-row">
-        <!-- Citations row -->
-        <div class="citations-row">
-          <div class="citations-label">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
-            </svg>
-            Sources:
+        <div class="banner-top-left">
+          <div class="banner-label">
+            <span class="banner-label-dot"></span>
+            Concept Summary
           </div>
-          <div id="citations-list"></div>
+          <div id="complexity-row" class="complexity-row"></div>
+          <span id="answer-meta"></span>
         </div>
+        <div class="banner-top-right">
+          <button id="banner-toggle-btn" class="banner-toggle-btn" onclick="toggleAnswerBanner()" title="Collapse / Expand Summary">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>
+            <span>Collapse</span>
+          </button>
+        </div>
+      </div>
 
-        <!-- Export Action Center (Phase 4) -->
-        <div class="export-actions-row">
-          <button id="copy-md-btn" class="export-btn" onclick="copyMarkdownCard()" title="Copy Obsidian markdown to clipboard">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-            </svg>
-            <span>Copy Markdown</span>
-          </button>
-          <button id="export-md-btn" class="export-btn export-btn-primary" onclick="exportObsidianCard()" title="Download Obsidian-compatible .md card">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-            <span>Export to Markdown / Obsidian</span>
-          </button>
+      <!-- 2-Column Responsive Body Wrap -->
+      <div id="banner-body-wrap" class="banner-body-wrap">
+        <div class="banner-grid">
+          <!-- Left Column: Core Explanation -->
+          <div class="banner-col-main">
+            <div id="answer-body"></div>
+          </div>
+
+          <!-- Right Column: Practice, Sources, Actions -->
+          <div class="banner-col-side">
+            <!-- Practice Problems (Phase 4) -->
+            <div id="practice-section" class="practice-section hidden">
+              <div class="practice-label">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+                </svg>
+                Practice:
+              </div>
+              <div id="practice-list" class="practice-list"></div>
+            </div>
+
+            <!-- Citations row -->
+            <div class="citations-row">
+              <div class="citations-label">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
+                </svg>
+                Sources:
+              </div>
+              <div id="citations-list"></div>
+            </div>
+
+            <!-- Export Action Center (Phase 4) -->
+            <div class="export-actions-row">
+              <button id="copy-md-btn" class="export-btn" onclick="copyMarkdownCard()" title="Copy Obsidian markdown to clipboard">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                </svg>
+                <span>Copy Markdown</span>
+              </button>
+              <button id="export-md-btn" class="export-btn export-btn-primary" onclick="exportObsidianCard()" title="Download Obsidian-compatible .md card">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                <span>Export Card</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1071,7 +1807,100 @@
   <!-- ══════════════════════════════════════════════════════════════ -->
   <div id="workspace">
 
-    <!-- ── Left Panel: Video Player ─────────────────────────────── -->
+    <!-- ── Left Panel: DSA Pattern Roadmap ───────────────────────── -->
+    <div id="roadmap-panel">
+      <div class="roadmap-header">
+        <div class="roadmap-title-row">
+          <div class="roadmap-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 11 12 14 22 4"></polyline>
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+            </svg>
+            <span>DSA Roadmap</span>
+          </div>
+          <span id="roadmap-stats-counter" class="roadmap-stats-pill">0 / 70 (0%)</span>
+        </div>
+
+        <div class="roadmap-progress-wrap">
+          <div id="roadmap-progress-bar" class="roadmap-progress-bar"></div>
+        </div>
+
+        <div class="roadmap-search-row">
+          <input
+            id="roadmap-filter-input"
+            class="roadmap-search-input"
+            type="text"
+            placeholder="Filter patterns or topics…"
+            oninput="handleRoadmapFilter(this.value)"
+          />
+          <button id="roadmap-search-clear" class="roadmap-search-clear" onclick="clearRoadmapFilter()" title="Clear filter">✕</button>
+          <svg class="roadmap-search-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
+        </div>
+
+        <!-- Fast Pattern Jump Bar -->
+        <div class="roadmap-pills-row" id="roadmap-pills-row">
+          <button class="roadmap-pill active" data-pattern="all" onclick="filterPatternPill('all')">All</button>
+          <button class="roadmap-pill" data-pattern="arrays-hashing" onclick="filterPatternPill('arrays-hashing')">Arrays</button>
+          <button class="roadmap-pill" data-pattern="two-pointers" onclick="filterPatternPill('two-pointers')">2-Pointers</button>
+          <button class="roadmap-pill" data-pattern="sliding-window" onclick="filterPatternPill('sliding-window')">Sliding Win</button>
+          <button class="roadmap-pill" data-pattern="linked-list" onclick="filterPatternPill('linked-list')">Linked List</button>
+          <button class="roadmap-pill" data-pattern="binary-search" onclick="filterPatternPill('binary-search')">Bin Search</button>
+          <button class="roadmap-pill" data-pattern="stack-monotonic" onclick="filterPatternPill('stack-monotonic')">Stack</button>
+          <button class="roadmap-pill" data-pattern="trees-bst" onclick="filterPatternPill('trees-bst')">Trees</button>
+          <button class="roadmap-pill" data-pattern="heaps" onclick="filterPatternPill('heaps')">Heaps</button>
+          <button class="roadmap-pill" data-pattern="trie" onclick="filterPatternPill('trie')">Trie</button>
+          <button class="roadmap-pill" data-pattern="graphs" onclick="filterPatternPill('graphs')">Graphs</button>
+          <button class="roadmap-pill" data-pattern="dynamic-programming" onclick="filterPatternPill('dynamic-programming')">DP</button>
+          <button class="roadmap-pill" data-pattern="intervals" onclick="filterPatternPill('intervals')">Intervals</button>
+          <button class="roadmap-pill" data-pattern="backtracking" onclick="filterPatternPill('backtracking')">Backtracking</button>
+          <button class="roadmap-pill" data-pattern="greedy-bit" onclick="filterPatternPill('greedy-bit')">Greedy/Bit</button>
+        </div>
+
+        <div class="roadmap-toolbar">
+          <div class="roadmap-toolbar-left">
+            <button class="roadmap-tool-link" onclick="toggleAllPatterns(true)">Expand</button>
+            <span>·</span>
+            <button class="roadmap-tool-link" onclick="toggleAllPatterns(false)">Collapse</button>
+            <span>·</span>
+            <button class="roadmap-tool-link" onclick="resetRoadmapProgress()" title="Reset checklist progress">Reset</button>
+          </div>
+          <div class="roadmap-scroll-nav">
+            <button class="roadmap-nav-btn" onclick="scrollRoadmapStep(-280)" title="Scroll Up (▲)">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+              <span>Up</span>
+            </button>
+            <button class="roadmap-nav-btn" onclick="scrollRoadmapStep(280)" title="Scroll Down (▼)">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+              <span>Down</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="roadmap-body" class="roadmap-body">
+        <!-- Dynamically rendered by initRoadmap() -->
+      </div>
+
+      <!-- Floating Up / Down Scroll Controller Dock -->
+      <div id="roadmap-scroll-dock" class="roadmap-scroll-dock">
+        <button class="dock-btn" onclick="scrollRoadmapTop()" title="Jump to top (⤒)">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/><line x1="6" y1="4" x2="18" y2="4"/></svg>
+        </button>
+        <button class="dock-btn dock-btn-accent" onclick="scrollRoadmapStep(-260)" onmousedown="startContinuousScroll(-1)" onmouseup="stopContinuousScroll()" onmouseleave="stopContinuousScroll()" title="Scroll Up (▲) - click or hold">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+        </button>
+        <button class="dock-btn dock-btn-accent" onclick="scrollRoadmapStep(260)" onmousedown="startContinuousScroll(1)" onmouseup="stopContinuousScroll()" onmouseleave="stopContinuousScroll()" title="Scroll Down (▼) - click or hold">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <button class="dock-btn" onclick="scrollRoadmapBottom()" title="Jump to bottom (⤓)">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/><line x1="6" y1="20" x2="18" y2="20"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Center Panel: Video Player ────────────────────────────── -->
     <div id="player-panel">
 
       <!-- Video shell -->
@@ -1317,10 +2146,29 @@
       activateLine(init);
     }
 
+    /* ── Answer Banner Toggle ───────────────────────────────────── */
+    function toggleAnswerBanner() {
+      const banner = document.getElementById('answer-banner');
+      if (!banner) return;
+      const isCollapsed = banner.classList.toggle('collapsed');
+      const btn = document.getElementById('banner-toggle-btn');
+      if (btn) {
+        btn.innerHTML = isCollapsed
+          ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg><span>Expand</span>`
+          : `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg><span>Collapse</span>`;
+      }
+    }
+
     /* ── Render Answer Section ──────────────────────────────────── */
     function renderAnswer(data) {
       document.getElementById('refusal-banner').style.display = 'none';
-      document.getElementById('answer-banner').style.display = 'block';
+      const banner = document.getElementById('answer-banner');
+      banner.style.display = 'block';
+      banner.classList.remove('collapsed');
+      const toggleBtn = document.getElementById('banner-toggle-btn');
+      if (toggleBtn) {
+        toggleBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg><span>Collapse</span>`;
+      }
 
       // Meta
       document.getElementById('answer-meta').textContent =
@@ -1629,11 +2477,523 @@
       handleAsk();
     }
 
+    /* ─── DSA Roadmap Module (Pattern-Wise DSA 2026 Edition) ───────── */
+    const ROADMAP_STORAGE_KEY = 'chronorag_dsa_roadmap_progress_v1';
+
+    const DSA_ROADMAP = [
+      {
+        id: "arrays-hashing",
+        name: "1. Arrays & Hashing",
+        icon: "📊",
+        topics: [
+          { id: "two-sum", title: "Two Sum (Hash Map Lookup)", diff: "Easy", query: "two sum hash map lookup algorithm" },
+          { id: "valid-anagram", title: "Valid Anagram & Frequency Map", diff: "Easy", query: "valid anagram frequency hash map" },
+          { id: "prefix-sum", title: "Prefix Sum & Subarray Sum Equals K", diff: "Med", query: "prefix sum subarray sum equals k" },
+          { id: "kadanes", title: "Kadane's Algorithm (Max Subarray)", diff: "Med", query: "Kadane algorithm maximum subarray intuition" },
+          { id: "majority-element", title: "Boyer-Moore Voting (Majority Element)", diff: "Easy", query: "Boyer Moore majority element algorithm" },
+          { id: "product-except-self", title: "Product of Array Except Self", diff: "Med", query: "product of array except self prefix suffix" },
+          { id: "longest-consecutive", title: "Longest Consecutive Sequence", diff: "Med", query: "longest consecutive sequence hashset" }
+        ]
+      },
+      {
+        id: "two-pointers",
+        name: "2. Two Pointers",
+        icon: "👉👈",
+        topics: [
+          { id: "valid-palindrome", title: "Valid Palindrome & String Pointers", diff: "Easy", query: "valid palindrome two pointer string" },
+          { id: "sorted-two-sum", title: "Two Sum II (Sorted Array)", diff: "Med", query: "two pointer approach arrays sorted sum" },
+          { id: "three-sum", title: "3Sum Triplet Target Sum", diff: "Med", query: "3Sum problem two pointer approach" },
+          { id: "container-water", title: "Container With Most Water", diff: "Med", query: "container with most water two pointers" },
+          { id: "trapping-rainwater", title: "Trapping Rain Water (Two Pointers)", diff: "Hard", query: "trapping rain water two pointer" }
+        ]
+      },
+      {
+        id: "sliding-window",
+        name: "3. Sliding Window",
+        icon: "🪟",
+        topics: [
+          { id: "fixed-window", title: "Fixed Window (Max Sum Subarray Size K)", diff: "Easy", query: "fixed size sliding window maximum sum" },
+          { id: "dynamic-window", title: "Longest Substring Without Repeating", diff: "Med", query: "longest substring without repeating characters sliding window" },
+          { id: "min-window-substring", title: "Minimum Window Substring", diff: "Hard", query: "minimum window substring sliding window" },
+          { id: "character-replacement", title: "Longest Repeating Character Replacement", diff: "Med", query: "longest repeating character replacement sliding window" },
+          { id: "sliding-window-max", title: "Sliding Window Maximum (Monotonic Deque)", diff: "Hard", query: "sliding window maximum monotonic deque" }
+        ]
+      },
+      {
+        id: "linked-list",
+        name: "4. Fast & Slow Pointers (Linked List)",
+        icon: "🔗",
+        topics: [
+          { id: "middle-node", title: "Middle of Linked List (Tortoise & Hare)", diff: "Easy", query: "find middle of linked list fast slow pointer" },
+          { id: "detect-cycle", title: "Floyd's Cycle Detection & Entry Point", diff: "Med", query: "detect cycle in linked list floyd tortoise hare" },
+          { id: "reverse-ll", title: "Reverse a Linked List (Iterative & Recursive)", diff: "Easy", query: "reverse linked list iterative recursive" },
+          { id: "merge-sorted-ll", title: "Merge Two Sorted Lists", diff: "Easy", query: "merge two sorted linked lists" },
+          { id: "reorder-list", title: "Reorder List (Middle + Reverse + Merge)", diff: "Med", query: "reorder list middle reverse merge pointers" },
+          { id: "lru-cache", title: "LRU Cache Design (DLL + HashMap)", diff: "Med", query: "LRU cache implementation doubly linked list" }
+        ]
+      },
+      {
+        id: "binary-search",
+        name: "5. Binary Search & Monotonic Space",
+        icon: "🎯",
+        topics: [
+          { id: "bs-standard", title: "Classic Binary Search (Sorted Array)", diff: "Easy", query: "binary search algorithm sorted array" },
+          { id: "bs-bounds", title: "Lower Bound & Upper Bound (First/Last)", diff: "Med", query: "first and last occurrence binary search lower bound" },
+          { id: "bs-rotated", title: "Search in Rotated Sorted Array", diff: "Med", query: "search in rotated sorted array binary search" },
+          { id: "bs-min-rotated", title: "Find Minimum in Rotated Sorted Array", diff: "Med", query: "find minimum in rotated sorted array binary search" },
+          { id: "bs-answer", title: "Search Space Elimination (Monotonic Predicates)", diff: "Med", query: "binary search on answer space monotonic predicates" },
+          { id: "bs-median-arrays", title: "Median of Two Sorted Arrays", diff: "Hard", query: "median of two sorted arrays binary search partition" }
+        ]
+      },
+      {
+        id: "stack-monotonic",
+        name: "6. Stack & Monotonic Stack",
+        icon: "🥞",
+        topics: [
+          { id: "valid-parentheses", title: "Valid Parentheses & Matching", diff: "Easy", query: "valid parentheses stack balance check" },
+          { id: "min-stack", title: "Min Stack Design (O(1) Auxiliary)", diff: "Med", query: "min stack design constant time" },
+          { id: "next-greater", title: "Next Greater Element (Monotonic Stack)", diff: "Med", query: "next greater element monotonic stack" },
+          { id: "daily-temperatures", title: "Daily Temperatures (Monotonic Decreasing)", diff: "Med", query: "daily temperatures monotonic stack" },
+          { id: "histogram-rect", title: "Largest Rectangle in Histogram", diff: "Hard", query: "largest rectangle in histogram stack" }
+        ]
+      },
+      {
+        id: "trees-bst",
+        name: "7. Trees & Binary Search Tree",
+        icon: "🌳",
+        topics: [
+          { id: "tree-dfs", title: "Tree Traversals (Pre/In/Postorder DFS)", diff: "Easy", query: "binary tree traversal preorder inorder postorder" },
+          { id: "tree-bfs", title: "Level Order Traversal (BFS)", diff: "Med", query: "binary tree level order traversal BFS" },
+          { id: "tree-diameter", title: "Maximum Depth & Diameter of Binary Tree", diff: "Easy", query: "diameter of binary tree depth recursion" },
+          { id: "tree-lca", title: "Lowest Common Ancestor (LCA)", diff: "Med", query: "lowest common ancestor binary tree LCA" },
+          { id: "validate-bst", title: "Validate BST & Inorder Monotonicity", diff: "Med", query: "validate binary search tree BST" },
+          { id: "max-path-sum", title: "Binary Tree Maximum Path Sum", diff: "Hard", query: "binary tree maximum path sum" }
+        ]
+      },
+      {
+        id: "heaps",
+        name: "8. Heaps & Priority Queues",
+        icon: "⛰️",
+        topics: [
+          { id: "top-k", title: "Top K Frequent Elements (Min-Heap)", diff: "Med", query: "top k frequent elements min heap" },
+          { id: "kth-largest", title: "Kth Largest Element in Array", diff: "Med", query: "kth largest element array min heap quickselect" },
+          { id: "merge-k-lists", title: "Merge K Sorted Lists", diff: "Hard", query: "merge k sorted lists priority queue" },
+          { id: "median-stream", title: "Find Median from Data Stream (Two Heaps)", diff: "Hard", query: "find median from data stream two heaps" },
+          { id: "task-scheduler", title: "Task Scheduler (Greedy Priority Queue)", diff: "Med", query: "task scheduler max heap greedy frequency" }
+        ]
+      },
+      {
+        id: "trie",
+        name: "9. Trie (Prefix Tree)",
+        icon: "🌲",
+        topics: [
+          { id: "implement-trie", title: "Implement Trie (Insert, Search, StartsWith)", diff: "Med", query: "implement trie prefix tree" },
+          { id: "word-search-ii", title: "Word Search II (Trie + 2D Backtracking)", diff: "Hard", query: "word search II trie backtracking" },
+          { id: "add-search-words", title: "Design Add and Search Words (Wildcard)", diff: "Med", query: "design add and search words trie wildcard" }
+        ]
+      },
+      {
+        id: "graphs",
+        name: "10. Graphs & BFS / DFS",
+        icon: "🕸️",
+        topics: [
+          { id: "graph-traversal", title: "Graph BFS & DFS (Connected Components)", diff: "Med", query: "graph BFS DFS traversal connected components" },
+          { id: "num-islands", title: "Number of Islands (2D Grid Traversal)", diff: "Med", query: "number of islands 2D grid BFS DFS" },
+          { id: "matrix-bfs", title: "Multi-Source BFS (Rotting Oranges)", diff: "Med", query: "rotting oranges multi source BFS matrix" },
+          { id: "cycle-detection", title: "Cycle Detection (Directed vs Undirected)", diff: "Med", query: "cycle detection in directed undirected graph" },
+          { id: "topological-sort", title: "Topological Sort (Kahn's Algorithm & DAG)", diff: "Med", query: "topological sort DAG kahns algorithm" },
+          { id: "dijkstra", title: "Dijkstra's Shortest Path Algorithm", diff: "Med", query: "Dijkstra algorithm shortest path" },
+          { id: "dsu", title: "Disjoint Set Union (DSU / Kruskal's MST)", diff: "Med", query: "disjoint set union DSU Kruskal algorithm" }
+        ]
+      },
+      {
+        id: "dynamic-programming",
+        name: "11. Dynamic Programming (1D & 2D)",
+        icon: "⚡",
+        topics: [
+          { id: "dp-1d", title: "1D DP (Climbing Stairs & House Robber)", diff: "Med", query: "climbing stairs dynamic programming 1D memoization" },
+          { id: "dp-knapsack", title: "0/1 Knapsack & Subset Sum Partition", diff: "Med", query: "0 1 knapsack problem subset sum dynamic programming" },
+          { id: "dp-coin-change", title: "Unbounded Knapsack & Coin Change", diff: "Med", query: "coin change unbounded knapsack dynamic programming" },
+          { id: "dp-lis", title: "Longest Increasing Subsequence (LIS)", diff: "Med", query: "longest increasing subsequence LIS dynamic programming" },
+          { id: "dp-lcs", title: "Longest Common Subsequence (LCS Tabulation)", diff: "Med", query: "LCS table initialization kaise karein?" },
+          { id: "dp-edit-dist", title: "Edit Distance (Levenshtein Distance)", diff: "Hard", query: "edit distance dynamic programming" },
+          { id: "dp-2d-grid", title: "2D Grid DP (Unique Paths / Min Path Sum)", diff: "Med", query: "unique paths 2D grid dynamic programming" }
+        ]
+      },
+      {
+        id: "intervals",
+        name: "12. Intervals",
+        icon: "⏱️",
+        topics: [
+          { id: "merge-intervals", title: "Merge Overlapping Intervals", diff: "Med", query: "merge intervals overlapping sorting" },
+          { id: "insert-interval", title: "Insert Interval", diff: "Med", query: "insert interval non overlapping" },
+          { id: "meeting-rooms", title: "Non-Overlapping Intervals & Meeting Rooms", diff: "Med", query: "meeting rooms non overlapping intervals" },
+          { id: "arrows-balloons", title: "Minimum Arrows to Burst Balloons", diff: "Med", query: "minimum arrows burst balloons intervals greedy" }
+        ]
+      },
+      {
+        id: "backtracking",
+        name: "13. Backtracking & Recursion",
+        icon: "🔄",
+        topics: [
+          { id: "subsets", title: "Subsets & Power Set (Backtracking)", diff: "Med", query: "subsets power set recursion backtracking" },
+          { id: "permutations", title: "Permutations & Combinations", diff: "Med", query: "permutations backtracking recursion" },
+          { id: "combination-sum", title: "Combination Sum (Target Recursion)", diff: "Med", query: "combination sum backtracking recursion" },
+          { id: "palindrome-partition", title: "Palindrome Partitioning", diff: "Med", query: "palindrome partitioning backtracking" },
+          { id: "n-queens", title: "N-Queens & Grid Constraints", diff: "Hard", query: "N Queens problem backtracking" }
+        ]
+      },
+      {
+        id: "greedy-bit",
+        name: "14. Greedy & Bit Manipulation",
+        icon: "💡",
+        topics: [
+          { id: "jump-game", title: "Jump Game (Greedy Reachability)", diff: "Med", query: "jump game greedy algorithm" },
+          { id: "gas-station", title: "Gas Station (Greedy Circular Tour)", diff: "Med", query: "gas station greedy circuit" },
+          { id: "single-number", title: "Single Number & XOR Bitwise Tricks", diff: "Easy", query: "single number bit manipulation XOR" },
+          { id: "counting-bits", title: "Counting Bits & Hamming Weight", diff: "Easy", query: "counting bits number of 1 bits bitwise" }
+        ]
+      }
+    ];
+
+    let roadmapProgress = {};
+    let openPatterns = new Set(["arrays-hashing", "two-pointers", "sliding-window", "dynamic-programming"]);
+    let activePatternFilter = 'all';
+    let continuousScrollInterval = null;
+
+    function loadRoadmapProgress() {
+      try {
+        const raw = localStorage.getItem(ROADMAP_STORAGE_KEY);
+        roadmapProgress = raw ? JSON.parse(raw) : {};
+      } catch (e) {
+        roadmapProgress = {};
+      }
+    }
+
+    function saveRoadmapProgress() {
+      try {
+        localStorage.setItem(ROADMAP_STORAGE_KEY, JSON.stringify(roadmapProgress));
+      } catch (e) {}
+    }
+
+    function toggleTopicProgress(topicId, isChecked) {
+      if (isChecked) {
+        roadmapProgress[topicId] = true;
+      } else {
+        delete roadmapProgress[topicId];
+      }
+      saveRoadmapProgress();
+      updateRoadmapProgressMetrics();
+      
+      const item = document.getElementById(`topic-item-${topicId}`);
+      if (item) {
+        item.classList.toggle('completed', isChecked);
+        const chk = item.querySelector('.roadmap-chk');
+        if (chk) chk.checked = isChecked;
+      }
+      // Update pattern card counter badge
+      DSA_ROADMAP.forEach(pattern => {
+        const topicInPattern = pattern.topics.some(t => t.id === topicId);
+        if (topicInPattern) {
+          updatePatternBadge(pattern);
+        }
+      });
+    }
+
+    function updatePatternBadge(pattern) {
+      const countEl = document.getElementById(`pattern-count-${pattern.id}`);
+      if (!countEl) return;
+      const completed = pattern.topics.filter(t => !!roadmapProgress[t.id]).length;
+      const total = pattern.topics.length;
+      countEl.textContent = `${completed}/${total}`;
+      countEl.classList.toggle('complete', completed === total && total > 0);
+    }
+
+    function updateRoadmapProgressMetrics() {
+      let totalTopics = 0;
+      let completedTopics = 0;
+      DSA_ROADMAP.forEach(p => {
+        p.topics.forEach(t => {
+          totalTopics++;
+          if (roadmapProgress[t.id]) completedTopics++;
+        });
+      });
+
+      const pct = totalTopics > 0 ? Math.round((completedTopics / totalTopics) * 100) : 0;
+
+      // Update counters
+      const counter = document.getElementById('roadmap-stats-counter');
+      if (counter) counter.textContent = `${completedTopics} / ${totalTopics} (${pct}%)`;
+
+      const bar = document.getElementById('roadmap-progress-bar');
+      if (bar) bar.style.width = `${pct}%`;
+
+      const headerBadge = document.getElementById('header-roadmap-badge');
+      if (headerBadge) headerBadge.textContent = `${completedTopics}/${totalTopics}`;
+    }
+
+    function togglePatternCard(patternId) {
+      const card = document.getElementById(`pattern-card-${patternId}`);
+      if (!card) return;
+      if (openPatterns.has(patternId)) {
+        openPatterns.delete(patternId);
+        card.classList.remove('open');
+      } else {
+        openPatterns.add(patternId);
+        card.classList.add('open');
+      }
+    }
+
+    function toggleAllPatterns(expand) {
+      DSA_ROADMAP.forEach(p => {
+        const card = document.getElementById(`pattern-card-${p.id}`);
+        if (!card) return;
+        if (expand) {
+          openPatterns.add(p.id);
+          card.classList.add('open');
+        } else {
+          openPatterns.delete(p.id);
+          card.classList.remove('open');
+        }
+      });
+    }
+
+    function toggleRoadmap() {
+      const panel = document.getElementById('roadmap-panel');
+      const btn = document.getElementById('roadmap-toggle-btn');
+      if (!panel) return;
+      const isCollapsed = panel.classList.toggle('collapsed');
+      if (btn) btn.classList.toggle('active', !isCollapsed);
+    }
+
+    function resetRoadmapProgress() {
+      if (!confirm('Are you sure you want to reset all DSA roadmap progress?')) return;
+      roadmapProgress = {};
+      saveRoadmapProgress();
+      renderRoadmap();
+      showToast('🔄 Roadmap progress reset');
+    }
+
+    function scrollRoadmapStep(delta) {
+      const body = document.getElementById('roadmap-body');
+      if (body) {
+        body.scrollBy({ top: delta, behavior: 'smooth' });
+      }
+    }
+
+    function scrollRoadmapTop() {
+      const body = document.getElementById('roadmap-body');
+      if (body) body.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function scrollRoadmapBottom() {
+      const body = document.getElementById('roadmap-body');
+      if (body) body.scrollTo({ top: body.scrollHeight, behavior: 'smooth' });
+    }
+
+    function startContinuousScroll(dir) {
+      stopContinuousScroll();
+      const body = document.getElementById('roadmap-body');
+      if (!body) return;
+      continuousScrollInterval = setInterval(() => {
+        body.scrollTop += dir * 20;
+      }, 16);
+    }
+
+    function stopContinuousScroll() {
+      if (continuousScrollInterval) {
+        clearInterval(continuousScrollInterval);
+        continuousScrollInterval = null;
+      }
+    }
+
+    function filterPatternPill(patternId) {
+      activePatternFilter = patternId;
+      document.querySelectorAll('.roadmap-pill').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.pattern === patternId);
+      });
+      if (patternId !== 'all') {
+        openPatterns.add(patternId);
+      }
+      renderRoadmap(document.getElementById('roadmap-filter-input').value || '');
+      if (patternId !== 'all') {
+        setTimeout(() => {
+          const card = document.getElementById(`pattern-card-${patternId}`);
+          if (card) {
+            card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            card.classList.remove('highlighted');
+            void card.offsetWidth;
+            card.classList.add('highlighted');
+            setTimeout(() => card.classList.remove('highlighted'), 1600);
+          }
+        }, 60);
+      }
+    }
+
+    function clearRoadmapFilter() {
+      const input = document.getElementById('roadmap-filter-input');
+      const clearBtn = document.getElementById('roadmap-search-clear');
+      if (input) input.value = '';
+      if (clearBtn) clearBtn.classList.remove('visible');
+      renderRoadmap('');
+      if (input) input.focus();
+    }
+
+    function handleRoadmapFilter(val) {
+      const clearBtn = document.getElementById('roadmap-search-clear');
+      if (clearBtn) clearBtn.classList.toggle('visible', !!val);
+      renderRoadmap(val);
+    }
+
+    function renderRoadmap(filter = '') {
+      const body = document.getElementById('roadmap-body');
+      if (!body) return;
+      body.innerHTML = '';
+      const query = (filter || '').toLowerCase().trim();
+
+      DSA_ROADMAP.forEach((pattern, patternIndex) => {
+        if (activePatternFilter !== 'all' && pattern.id !== activePatternFilter) return;
+
+        const matchesPattern = pattern.name.toLowerCase().includes(query);
+        const filteredTopics = pattern.topics.filter(t =>
+          matchesPattern || t.title.toLowerCase().includes(query) || (t.query && t.query.toLowerCase().includes(query))
+        );
+
+        if (query && filteredTopics.length === 0) return;
+
+        const isOpen = (query || activePatternFilter !== 'all') ? true : openPatterns.has(pattern.id);
+        const completed = pattern.topics.filter(t => !!roadmapProgress[t.id]).length;
+        const total = pattern.topics.length;
+        const allDone = completed === total && total > 0;
+
+        // Strip leading number from name for display (e.g. "1. Arrays & Hashing" -> "Arrays & Hashing")
+        const displayName = pattern.name.replace(/^\d+\.\s*/, '');
+        const sectionNum = String(patternIndex + 1).padStart(2, '0');
+
+        const card = document.createElement('div');
+        card.id = `pattern-card-${pattern.id}`;
+        card.className = `roadmap-pattern-card${isOpen ? ' open' : ''}`;
+
+        let topicsHtml = '';
+        filteredTopics.forEach(t => {
+          const isDone = !!roadmapProgress[t.id];
+          const diffClass = t.diff ? `diff-${t.diff.toLowerCase()}` : '';
+          const diffBadge = t.diff ? `<span class="diff-badge ${diffClass}">${t.diff}</span>` : '';
+          topicsHtml += `
+            <div id="topic-item-${t.id}" class="roadmap-topic-item${isDone ? ' completed' : ''}">
+              <div class="roadmap-chk-wrap">
+                <input
+                  type="checkbox"
+                  class="roadmap-chk"
+                  ${isDone ? 'checked' : ''}
+                  onchange="toggleTopicProgress('${t.id}', this.checked)"
+                  title="Mark as completed"
+                />
+              </div>
+              <span class="roadmap-topic-title" onclick="setQuery('${esc(t.query)}')" title="${esc(t.title)}">${esc(t.title)}</span>
+              ${diffBadge}
+              <button class="roadmap-ask-btn" onclick="setQuery('${esc(t.query)}')" title="Ask ChronoRAG">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/>
+                </svg>
+              </button>
+            </div>
+          `;
+        });
+
+        card.innerHTML = `
+          <div class="tracker-section-header" onclick="togglePatternCard('${pattern.id}')">
+            <span class="tracker-section-num">${sectionNum}</span>
+            <span class="roadmap-pattern-name">${esc(displayName)}</span>
+            <div class="roadmap-pattern-meta">
+              <span id="pattern-count-${pattern.id}" class="roadmap-pattern-count${allDone ? ' complete' : ''}">${completed}/${total}</span>
+              <svg class="roadmap-chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </div>
+          </div>
+          <div class="roadmap-pattern-topics">${topicsHtml}</div>
+        `;
+
+        body.appendChild(card);
+      });
+
+      updateRoadmapProgressMetrics();
+    }
+
+    function setupRoadmapNavigation() {
+      const panel = document.getElementById('roadmap-panel');
+      const body = document.getElementById('roadmap-body');
+      const pills = document.getElementById('roadmap-pills-row');
+      if (!panel || !body) return;
+
+      // Mouse wheel delegation on whole roadmap panel
+      panel.addEventListener('wheel', (e) => {
+        if (pills && pills.contains(e.target) && Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+          return; // Horizontal pills scroll
+        }
+        if (!body.contains(e.target) || e.target === panel) {
+          body.scrollTop += e.deltaY;
+          e.preventDefault();
+        }
+      }, { passive: false });
+
+      // Track panel hover for keyboard navigation
+      panel.addEventListener('mouseenter', () => { panel.dataset.hovered = 'true'; });
+      panel.addEventListener('mouseleave', () => { panel.dataset.hovered = 'false'; });
+
+      // Keyboard Arrow Up/Down navigation when roadmap panel is hovered
+      document.addEventListener('keydown', (e) => {
+        if (panel.dataset.hovered === 'true' &&
+            document.activeElement !== document.getElementById('query-input') &&
+            document.activeElement !== document.getElementById('roadmap-filter-input')) {
+          if (e.key === 'ArrowUp') {
+            body.scrollBy({ top: -75, behavior: 'smooth' });
+            e.preventDefault();
+          } else if (e.key === 'ArrowDown') {
+            body.scrollBy({ top: 75, behavior: 'smooth' });
+            e.preventDefault();
+          } else if (e.key === 'PageUp') {
+            body.scrollBy({ top: -300, behavior: 'smooth' });
+            e.preventDefault();
+          } else if (e.key === 'PageDown') {
+            body.scrollBy({ top: 300, behavior: 'smooth' });
+            e.preventDefault();
+          } else if (e.key === 'Home' && !e.ctrlKey) {
+            body.scrollTo({ top: 0, behavior: 'smooth' });
+            e.preventDefault();
+          } else if (e.key === 'End' && !e.ctrlKey) {
+            body.scrollTo({ top: body.scrollHeight, behavior: 'smooth' });
+            e.preventDefault();
+          }
+        }
+      });
+
+      // Horizontal mouse wheel scrolling for pills bar
+      if (pills) {
+        pills.addEventListener('wheel', (e) => {
+          if (e.deltaY !== 0 && Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+            pills.scrollLeft += e.deltaY * 0.8;
+            e.preventDefault();
+          }
+        }, { passive: false });
+      }
+    }
+
+    function initRoadmap() {
+      loadRoadmapProgress();
+      renderRoadmap();
+      setupRoadmapNavigation();
+    }
+
     /* ── Init ───────────────────────────────────────────────────── */
     const inputEl  = document.getElementById('query-input');
     const inputRow = document.getElementById('search-input-row');
     const zone     = document.getElementById('search-zone');
     const charEl   = document.getElementById('char-count');
+
+    // Initialize DSA Roadmap
+    initRoadmap();
 
     // Focus glow
     inputEl.addEventListener('focus', () => {

@@ -667,7 +667,7 @@ class EvaluationHarness:
         self.console.print(
             Panel(
                 f"Retrieval Latency  (Dense + Sparse BM25 + Qdrant RRF) : [cyan]{aggregates['mean_retrieval_latency_ms']} ms[/]\n"
-                f"Generation Latency (Gemini 2.5 Flash Synthesis)         : [magenta]{aggregates['mean_generation_latency_ms']} ms[/]\n"
+                f"Generation Latency (Gemini 3.6 Flash Synthesis)         : [magenta]{aggregates['mean_generation_latency_ms']} ms[/]\n"
                 f"Cold vs Warm Query Embedding Delta                      : [yellow]{avg_cold_ms:.1f} ms -> {avg_warm_ms:.2f} ms ({speedup_str})[/]\n"
                 f"Total Mean Latency (End-to-End Pipeline)               : [white]{aggregates['mean_latency_ms']} ms[/]  (P95: {aggregates['p95_latency_ms']} ms)",
                 title="Latency Breakdown Profile",
@@ -772,7 +772,7 @@ def save_reports(run_output: dict[str, Any], output_dir: Optional[Path] = None) 
         "",
         "## Latency Profile",
         f"- **Mean Retrieval Latency (Dense + Sparse BM25 + Qdrant RRF):** `{run_output['aggregates']['mean_retrieval_latency_ms']} ms`",
-        f"- **Mean Generation Latency (Gemini 2.5 Flash):** `{run_output['aggregates']['mean_generation_latency_ms']} ms`",
+        f"- **Mean Generation Latency (Gemini 3.6 Flash):** `{run_output['aggregates']['mean_generation_latency_ms']} ms`",
         f"- **Mean Total Latency:** `{run_output['aggregates']['mean_latency_ms']} ms`",
         f"- **P95 Latency:** `{run_output['aggregates']['p95_latency_ms']} ms`",
         "",

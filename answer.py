@@ -1,5 +1,5 @@
 """
-answer.py — Answer synthesis with Gemini 2.5 Flash + refusal guard.
+answer.py — Answer synthesis with Gemini 3.6 Flash + refusal guard.
 
 Guardrails enforced here:
   1. Distance cutoff (MAX_DISTANCE = 0.5): if best retrieval distance > 0.5,
