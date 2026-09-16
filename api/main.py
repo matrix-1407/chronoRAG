@@ -21,7 +21,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -82,6 +82,7 @@ app.add_middleware(
     allow_origins=["*"],        # Tighten in production
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
+    expose_headers=["Server-Timing"],
 )
 
 
@@ -107,19 +108,21 @@ async def root():
 
 
 @app.post("/api/ask", response_model=RAGResponse, tags=["RAG"])
-async def ask(request: AskRequest) -> RAGResponse:
+async def ask(request: AskRequest, response: Response) -> RAGResponse:
     """
-    Full Phase 2 RAG pipeline.
+    Full Phase 2 RAG pipeline with high-resolution latency instrumentation.
 
     1. Preprocess query (acronym expansion + LeetCode normalization).
-    2. Encode with HybridEmbedder (dense bge-m3 + FastEmbed BM25).
+    2. Encode with HybridEmbedder (dense bge-m3 + FastEmbed BM25) with LRU caching.
     3. Hybrid retrieval in Qdrant with Reciprocal Rank Fusion (RRF).
     4. Distance cutoff guard (MAX_DISTANCE = 0.5):
-       - If best distance > 0.5 → refusal with 0 tokens.
+       - If best distance > 0.5 → refusal with 0 tokens and 0ms generation.
     5. Gemini generation with strict system prompt.
-    6. Return structured RAGResponse with answer, badge, and citations.
+    6. Return structured RAGResponse with answer, badge, citations, and latency breakdown.
+    7. Server-Timing HTTP header for downstream performance tracing.
     """
     t0 = time.perf_counter()
+    timing: dict[str, float] = {}
 
     try:
         client = index.get_client()
@@ -129,10 +132,21 @@ async def ask(request: AskRequest) -> RAGResponse:
     # 1. Preprocess query
     query_processed = preprocess_query(request.query)
 
-    # 2. Vector search (Hybrid with RRF, fallback to dense if collection not yet migrated)
+    is_hyb = index.is_hybrid_collection(client)
+
+    # 2. Embedding generation (timed, benefits from LRU cache)
+    t_embed_start = time.perf_counter()
+    if is_hyb:
+        query_dense, query_sparse = embed.hybrid_embedder.embed_query(query_processed)
+    else:
+        query_dense = embed.encode_query(query_processed)
+        query_sparse = None
+    timing["embed_ms"] = round((time.perf_counter() - t_embed_start) * 1000, 2)
+
+    # 3. Vector search (timed)
+    t_ret_start = time.perf_counter()
     try:
-        if index.is_hybrid_collection(client):
-            query_dense, query_sparse = embed.hybrid_embedder.embed_query(query_processed)
+        if index.is_hybrid_collection(client) and query_sparse is not None:
             points, best_distance = index.search_hybrid(
                 client=client,
                 query_dense=query_dense,
@@ -140,13 +154,13 @@ async def ask(request: AskRequest) -> RAGResponse:
                 top_k=request.top_k,
             )
         else:
-            query_vec = embed.encode_query(query_processed)
-            points = index.search_dense(client, query_vec, top_k=request.top_k)
+            points = index.search_dense(client, query_dense, top_k=request.top_k)
             best_distance = 1.0 - float(points[0].score) if points else 1.0
     except Exception as exc:
         raise HTTPException(status_code=503, detail=f"Search failed: {exc}")
+    timing["retrieval_ms"] = round((time.perf_counter() - t_ret_start) * 1000, 2)
 
-    # 3. Generate answer (includes all guardrails)
+    # 4. Generate answer (includes all guardrails, records generation_ms and total_ms)
     try:
         resp = rag_answer(
             query=request.query,
@@ -154,9 +168,20 @@ async def ask(request: AskRequest) -> RAGResponse:
             retrieval_distance=best_distance,
             query_processed=query_processed,
             t0=t0,
+            timing=timing,
         )
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Generation failed: {exc}")
+
+    # 5. Attach standard HTTP Server-Timing header
+    # Format: Server-Timing: embed;dur=X, retrieval;dur=Y, generation;dur=Z, total;dur=W
+    e_dur = resp.timing.get("embed_ms", 0.0)
+    r_dur = resp.timing.get("retrieval_ms", 0.0)
+    g_dur = resp.timing.get("generation_ms", 0.0)
+    tot_dur = resp.timing.get("total_ms", 0.0)
+    response.headers["Server-Timing"] = (
+        f"embed;dur={e_dur}, retrieval;dur={r_dur}, generation;dur={g_dur}, total;dur={tot_dur}"
+    )
 
     return resp
 

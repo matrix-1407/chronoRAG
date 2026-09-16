@@ -25,3 +25,8 @@ qdrant_storage/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Evaluation Reports (Track benchmark summary only)
+eval/reports/report_*.json
+eval/reports/report_*.md
+!eval/reports/benchmark_summary.json

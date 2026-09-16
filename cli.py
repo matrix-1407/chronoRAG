@@ -253,15 +253,19 @@ def ask(
     """Full RAG pipeline: preprocess + hybrid search + generate answer with Gemini."""
     client = index.get_client()
     t0 = time.perf_counter()
+    timing: dict[str, float] = {}
 
     # Preprocess
     query_processed = preprocess_query(query)
     if query_processed.lower() != query.lower():
         console.print(f"[dim]Expanded query:[/] [cyan]{query_processed}[/]")
 
-    # Hybrid Embed & Retrieve
+    # Hybrid Embed & Retrieve (with high-resolution latency measurement)
+    t_embed_start = time.perf_counter()
     dense_vec, sparse_vec = embed.hybrid_embedder.embed_query(query_processed)
+    timing["embed_ms"] = round((time.perf_counter() - t_embed_start) * 1000, 2)
 
+    t_ret_start = time.perf_counter()
     if index.is_hybrid_collection(client):
         points, best_distance = index.search_hybrid(
             client=client,
@@ -272,22 +276,32 @@ def ask(
     else:
         points = index.search_dense(client, dense_vec, top_k=top_k)
         best_distance = 1.0 - float(points[0].score) if points else 1.0
+    timing["retrieval_ms"] = round((time.perf_counter() - t_ret_start) * 1000, 2)
 
-    # Generate (includes refusal guard)
+    # Generate (includes refusal guard, timing generation_ms and total_ms)
     resp: RAGResponse = rag_answer(
         query=query,
         points=points,
         retrieval_distance=best_distance,
         query_processed=query_processed,
         t0=t0,
+        timing=timing,
     )
 
     # Display
     if resp.is_refused:
+        timing_sub = ""
+        if resp.timing:
+            t = resp.timing
+            timing_sub = (
+                f" | Embed: {t.get('embed_ms', 0):.1f}ms | "
+                f"Ret: {t.get('retrieval_ms', 0):.1f}ms | Gen: 0ms | "
+                f"Total: {t.get('total_ms', 0):.1f}ms"
+            )
         console.print(Panel(
             f"[yellow]{resp.answer}[/]",
             title="[red][REFUSED] Out-of-syllabus[/]",
-            subtitle=f"Distance: {resp.retrieval_distance} | Tokens: 0 | {resp.latency_ms}ms",
+            subtitle=f"Distance: {resp.retrieval_distance} | Tokens: 0{timing_sub}",
         ))
         return
 
@@ -301,6 +315,17 @@ def ask(
     console.print(Panel(content, title="Answer", border_style="green"))
     if badge_line:
         console.print(f"\n[bold magenta]{badge_line}[/]")
+
+    # Millisecond latency breakdown directly below badge
+    if resp.timing:
+        t = resp.timing
+        console.print(
+            f"[dim]Timing breakdown:[/] "
+            f"Embed: [bold cyan]{t.get('embed_ms', 0):.1f}ms[/] | "
+            f"Retrieval: [bold cyan]{t.get('retrieval_ms', 0):.1f}ms[/] | "
+            f"Generation: [bold cyan]{t.get('generation_ms', 0):.1f}ms[/] | "
+            f"Total: [bold green]{t.get('total_ms', 0):.1f}ms[/]"
+        )
 
     # Citations
     if resp.citations:
@@ -344,5 +369,59 @@ def ask(
     )
 
 
+# ── benchmark (Phase 5) ────────────────────────────────────────────────────
+
+@app.command()
+def benchmark(
+    golden: Path = typer.Option(
+        Path("eval/golden.json"),
+        "--golden", "-g",
+        help="Path to golden evaluation dataset JSON",
+    ),
+    save_report: Optional[Path] = typer.Option(
+        None,
+        "--save-report", "-s",
+        help="Directory or path to save output JSON/Markdown report (default: eval/reports/)",
+    ),
+    top_k: int = typer.Option(5, "--top-k", "-k", help="Number of chunks to retrieve"),
+    url: Optional[str] = typer.Option(
+        None, "--url", "-u", help="Base URL of running FastAPI instance (default: direct pipeline)",
+    ),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Show per-case details"),
+    fail_fast: bool = typer.Option(False, "--fail-fast", help="Halt on first failing test case"),
+    limit: Optional[int] = typer.Option(None, "--limit", "-n", help="Limit number of test cases to run"),
+    retrieval_only: bool = typer.Option(
+        False,
+        "--retrieval-only", "-r",
+        help="Evaluate retrieval hit rate, refusal accuracy, and retrieval latency without calling LLM (saves API quota)",
+    ),
+) -> None:
+    """
+    Run automated QA and benchmarking suite against the golden dataset.
+    Computes Hit Rate @ K, Refusal Accuracy, Code Contamination, Latency Profiling,
+    and Token Compliance, saving formatted reports to eval/reports/.
+    """
+    from eval.evaluate import EvaluationHarness, save_reports
+
+    harness = EvaluationHarness(
+        golden_path=golden,
+        url=url,
+        top_k=top_k,
+        verbose=verbose,
+        fail_fast=fail_fast,
+        limit=limit,
+        retrieval_only=retrieval_only,
+        console=console,
+    )
+
+    output = harness.run()
+    json_path, md_path = save_reports(output, save_report)
+    console.print(f"\n[green]Saved benchmark reports:[/]\n  [cyan]{json_path}[/]\n  [cyan]{md_path}[/]\n")
+
+    if output.get("blocking_failed"):
+        raise typer.Exit(code=1)
+
+
 if __name__ == "__main__":
     app()
+

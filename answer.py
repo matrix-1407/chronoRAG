@@ -136,6 +136,7 @@ def answer(
     retrieval_distance: float | None = None,
     query_processed: str = "",
     t0: float | None = None,
+    timing: dict[str, float] | None = None,
 ) -> RAGResponse:
     """
     Full answer synthesis pipeline with guardrails.
@@ -145,13 +146,18 @@ def answer(
         points:              Top-K ScoredPoints from Qdrant (ordered by score desc).
         retrieval_distance:  Cosine distance metric from dense match (if hybrid).
         query_processed:     Preprocessed query string (after acronym expansion).
-        t0:                  Pipeline start time (for latency_ms).
+        t0:                  Pipeline start time (for latency_ms & total_ms).
+        timing:              Dictionary recording high-resolution pipeline latencies:
+                             embed_ms, retrieval_ms, generation_ms, total_ms.
 
     Returns:
         RAGResponse — always a valid response, even on refusal or error.
     """
     if t0 is None:
         t0 = time.perf_counter()
+
+    if timing is None:
+        timing = {"embed_ms": 0.0, "retrieval_ms": 0.0, "generation_ms": 0.0, "total_ms": 0.0}
 
     if not query_processed:
         query_processed = preprocess_query(query)
@@ -161,13 +167,17 @@ def answer(
 
     # ── Guard 1: no results at all ─────────────────────────────────────────
     if not points:
+        timing["generation_ms"] = 0.0
+        timing["total_ms"] = round((time.perf_counter() - t0) * 1000, 2)
         return RAGResponse(
             answer=REFUSAL_MSG,
             is_refused=True,
+            grounded=False,
             retrieval_distance=1.0,
             tokens_used=0,
             query_processed=query_processed,
             latency_ms=_elapsed_ms(),
+            timing=timing,
         )
 
     # ── Guard 2: distance cutoff ───────────────────────────────────────────
@@ -179,13 +189,17 @@ def answer(
         best_distance = max(0.0, 1.0 - top_score) if top_score > 0.05 else 1.0
 
     if best_distance > config.MAX_DISTANCE:
+        timing["generation_ms"] = 0.0
+        timing["total_ms"] = round((time.perf_counter() - t0) * 1000, 2)
         return RAGResponse(
             answer=REFUSAL_MSG,
             is_refused=True,
+            grounded=False,
             retrieval_distance=round(best_distance, 4),
             tokens_used=0,
             query_processed=query_processed,
             latency_ms=_elapsed_ms(),
+            timing=timing,
         )
 
     # ── Build context ──────────────────────────────────────────────────────
@@ -198,10 +212,11 @@ def answer(
     # ── Call Gemini with Retry & Fallback ──────────────────────────────────
     client = _get_gemini_client()
 
-    max_retries = 3
+    max_retries = 4
     last_err: Exception | None = None
     response = None
 
+    t_gen_start = time.perf_counter()
     for attempt in range(max_retries):
         try:
             response = client.models.generate_content(
@@ -228,11 +243,14 @@ def answer(
             err_msg = str(exc)
             # Retry on transient server errors (503 / 429)
             if ("503" in err_msg or "UNAVAILABLE" in err_msg or "429" in err_msg or "RESOURCE_EXHAUSTED" in err_msg) and attempt < max_retries - 1:
-                wait_sec = 2 ** attempt
-                print(f"[answer] Gemini transient error ({exc}), retrying in {wait_sec}s (attempt {attempt + 1}/{max_retries}) …")
+                wait_sec = (attempt + 1) * 1.5
+                print(f"[answer] Gemini transient error ({exc}), retrying in {wait_sec:.1f}s (attempt {attempt + 1}/{max_retries}) ...")
                 time.sleep(wait_sec)
                 continue
             break
+
+    timing["generation_ms"] = round((time.perf_counter() - t_gen_start) * 1000, 2)
+    timing["total_ms"] = round((time.perf_counter() - t0) * 1000, 2)
 
     # ── Practice problems auto-mapping (Phase 4) ───────────────────────────
     retrieved_titles = [str(p.payload.get("title", "")) for p in points if p.payload]
@@ -256,8 +274,10 @@ def answer(
             retrieval_distance=round(best_distance, 4),
             tokens_used=0,
             is_refused=False,
+            grounded=False,
             query_processed=query_processed or query,
             latency_ms=_elapsed_ms(),
+            timing=timing,
         )
 
     answer_text: str = response.text or REFUSAL_MSG
@@ -268,25 +288,32 @@ def answer(
     if usage:
         tokens_used = (usage.prompt_token_count or 0) + (usage.candidates_token_count or 0)
 
+    # ── Check if Gemini triggered out-of-domain refusal ────────────────────
+    is_refused_gemini = (REFUSAL_MSG in answer_text)
+
     # ── Parse complexity badge ─────────────────────────────────────────────
-    badge: ComplexityBadge | None = parse_badge(answer_text)
+    badge: ComplexityBadge | None = parse_badge(answer_text) if not is_refused_gemini else None
 
-    # ── Map practice problems using query, titles, and extracted pattern ───
-    practice_raw = get_practice_links(
-        query=query,
-        retrieved_titles=retrieved_titles,
-        retrieved_texts=retrieved_texts,
-        pattern=badge.pattern if badge else None,
-    )
-    practice_problems = [PracticeProblem(**p) for p in practice_raw]
+    if not is_refused_gemini:
+        # ── Map practice problems using query, titles, and extracted pattern ───
+        practice_raw = get_practice_links(
+            query=query_processed or query,
+            retrieved_titles=retrieved_titles,
+            retrieved_texts=retrieved_texts,
+            pattern=badge.pattern if badge else None,
+        )
+        practice_problems = [PracticeProblem(**p) for p in practice_raw]
 
-    # ── Filter to explicitly cited chunks only ─────────────────────────────
-    cited_indices = _extract_cited_indices(answer_text, len(points))
-    # If model produced no [N] refs at all, surface the top result anyway
-    if not cited_indices:
-        cited_indices = [0]
+        # ── Filter to explicitly cited chunks only ─────────────────────────────
+        cited_indices = _extract_cited_indices(answer_text, len(points))
+        # If model produced no [N] refs at all, surface the top result anyway
+        if not cited_indices:
+            cited_indices = [0]
 
-    citations = [_point_to_citation(points[i], fallback_distance=best_distance) for i in cited_indices]
+        citations = [_point_to_citation(points[i], fallback_distance=best_distance) for i in cited_indices]
+    else:
+        practice_problems = []
+        citations = []
 
     return RAGResponse(
         answer=answer_text,
@@ -295,7 +322,9 @@ def answer(
         practice_problems=practice_problems,
         retrieval_distance=round(best_distance, 4),
         tokens_used=tokens_used,
-        is_refused=False,
+        is_refused=is_refused_gemini,
+        grounded=not is_refused_gemini,
         query_processed=query_processed or query,
         latency_ms=_elapsed_ms(),
+        timing=timing,
     )

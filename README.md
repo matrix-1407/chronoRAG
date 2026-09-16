@@ -6,7 +6,7 @@
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![Qdrant](https://img.shields.io/badge/Qdrant-Cloud-red.svg?logo=qdrant&logoColor=white)](https://qdrant.tech)
-[![Gemini Flash](https://img.shields.io/badge/Gemini-3.5%20Flash-4285F4.svg?logo=google&logoColor=white)](https://ai.google.dev)
+[![Gemini Flash](https://img.shields.io/badge/Gemini-2.5%20Flash-4285F4.svg?logo=google&logoColor=white)](https://ai.google.dev)
 [![FastEmbed](https://img.shields.io/badge/FastEmbed-BM25-orange.svg)](https://github.com/qdrant/fastembed)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
@@ -305,15 +305,42 @@ Returns point counts, chunk counts, and collection health metrics.
 
 ---
 
-## 🛡 Guardrails & Token Optimization
+---
 
-1. **Hybrid Refusal Cutoff (`MAX_DISTANCE = 0.46` + BM25 Bonus)**:
-   - Evaluates dense cosine distance alongside sparse BM25 scores.
-   - Genuine DSA queries with technical lecture vocabulary receive a `-0.025` distance bonus, preventing false rejections on conversational Hinglish phrasing while strictly blocking non-DSA queries (e.g., React, ML, Cooking) with `tokens_used: 0`.
-2. **Zero-Thinking Budget (`thinking_budget = 0`)**:
-   - Disables excessive internal chain-of-thought tokens, returning crisp, focused answers in ~3–4 seconds.
-3. **Chunk Deduping & Repetition Filter**:
-   - Whisper transcription loops (repeated words or silence loops) are discarded before embedding using a lexical compression ratio filter (`unique_ratio < 0.35`).
+## 📊 Quality Assurance & Production Benchmarks
+
+ChronoRAG features an automated evaluation suite ([`eval/evaluate.py`](eval/evaluate.py)) benchmarking the system against a curated golden test suite ([`eval/golden.json`](eval/golden.json)) across 24 test cases (16 in-syllabus conceptual & exact LeetCode matches, 8 out-of-syllabus negative guard cases).
+
+### Production Performance Summary
+
+| Optimization Metric | Measured Performance | Target Baseline | Production Impact |
+|---|---:|---:|---|
+| **Top-1 Retrieval Hit Rate** | **87.5%** | $\ge 50.0\%$ | Precision preserved under INT8 quantization |
+| **Top-3 Retrieval Hit Rate** | **100.0%** | $\ge 70.0\%$ | Identical recall ($0\%$ drift) |
+| **Top-5 Retrieval Hit Rate** | **100.0%** | $\ge 80.0\%$ | Complete recall across all topics |
+| **Out-of-Syllabus Refusal Precision** | **100.0%** | $100.0\%$ | Strict refusal ($0$ LLM tokens spent) |
+| **Avg Cold Embedding Latency** | **~686 ms** | $< 1000\text{ ms}$ | Full dual-vector neural pass (dense + sparse) |
+| **Avg Warm Embedding Latency (LRU)** | **0.02 ms** | $< 2.0\text{ ms}$ | **33,281x speedup** via `LRUQueryCache` |
+| **Quantization Memory Factor** | **4x reduction** | INT8 Scalar | **75% vector RAM savings** in Qdrant |
+| **End-to-End Latency Compliance** | **PASS** | $\le 3500\text{ ms}$ | Non-blocking streaming and sub-second retrieval |
+
+*Canonical benchmark report snapshot: [`eval/reports/benchmark_summary.json`](eval/reports/benchmark_summary.json).*
+
+---
+
+## ⚡ Production Performance Optimization Layer
+
+1. **Thread-Safe LRU Embedding Cache (`embed.py`)**:
+   - Integrated `LRUQueryCache` backed by `collections.OrderedDict` and `threading.Lock` (maxsize=512).
+   - Normalized keys (`normalize_query`) strip extraneous whitespace, case variations, and trailing punctuation, dropping warm query embedding times from ~686ms to **0.02ms** (**33,281x speedup**).
+2. **INT8 Scalar Quantization (`index.py`)**:
+   - Configured Qdrant Cloud collection with `ScalarType.INT8` and `quantile=0.99`.
+   - Compresses 1024-dimension float32 vectors by 4x, slashing cloud memory overhead by **75%** while maintaining a **100% Top-3 and Top-5 Hit Rate**.
+3. **High-Resolution Latency Instrumentation & W3C `Server-Timing` (`api/main.py`)**:
+   - Emits standard W3C `Server-Timing: embed;dur=X, retrieval;dur=Y, generation;dur=Z, total;dur=W` headers for production observability.
+   - Supplies granular timing breakdowns in `/api/ask` responses (`timing.embed_ms`, `timing.retrieval_ms`, `timing.generation_ms`, `timing.total_ms`).
+4. **Canonical Concept Expansion (`preprocess.py`)**:
+   - Enriches domain-specific queries (e.g. DP table initialization, memoization base cases) with canonical speech vocabulary used by instructors (`"tabulation dp table initialization base case row column 0"`), ensuring precision retrieval across complex algorithmic segments.
 
 ---
 
@@ -329,12 +356,16 @@ All settings can be customized via `.env` or system environment variables:
 | `YTRAG_COLLECTION` | `dsa_lectures_1024` | Qdrant collection name |
 | `YTRAG_EMBED_MODEL` | `BAAI/bge-m3` | Dense embedding model name (1024-dim) |
 | `YTRAG_SPARSE_MODEL` | `Qdrant/bm25` | Sparse lexical model name via FastEmbed |
-| `YTRAG_GEMINI_MODEL` | `gemini-3.5-flash` | Gemini synthesis model |
+| `YTRAG_GEMINI_MODEL` | `gemini-2.5-flash` | Gemini synthesis model |
 | `YTRAG_MAX_DISTANCE` | `0.46` | Cosine distance threshold for out-of-domain refusal |
+| `YTRAG_TOP_K_DENSE` | `25` | Dense candidates prefetch pool for RRF |
+| `YTRAG_TOP_K_SPARSE` | `25` | Sparse candidates prefetch pool for RRF |
+| `YTRAG_RRF_K` | `60` | Reciprocal Rank Fusion constant |
 | `YTRAG_CHUNK_SECONDS` | `75` | Target chunk window length in seconds |
 | `YTRAG_CHUNK_OVERLAP` | `15` | Overlap between adjacent chunk windows in seconds |
 | `YTRAG_LINK_REWIND` | `5` | Playback seek buffer (seconds) before chunk start |
-| `YTRAG_MAX_OUTPUT_TOKENS` | `300` | Hard cap on LLM generation tokens |
+| `YTRAG_MAX_OUTPUT_TOKENS` | `450` | Hard cap on LLM generation tokens |
+
 
 ---
 

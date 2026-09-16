@@ -47,14 +47,28 @@ DSA_ACRONYMS: dict[str, str] = {
 
 def normalize_leetcode(text: str) -> str:
     """
-    Standardize LeetCode problem references.
+    Standardize LeetCode problem references and enrich with canonical titles.
     Examples:
-        "lc 206"        → "LeetCode 206"
-        "leetcode #1"   → "LeetCode 1"
-        "lc#15"         → "LeetCode 15"
+        "lc 206"        → "LeetCode 206 Reverse Linked List"
+        "leetcode #1"   → "LeetCode 1 Two Sum"
+        "lc#15"         → "LeetCode 15 3Sum"
     """
     pattern = re.compile(r"\b(?:lc|leetcode)\s*#?\s*(\d+)\b", re.IGNORECASE)
-    return pattern.sub(r"LeetCode \1", text)
+
+    def _repl(m: re.Match) -> str:
+        num_str = m.group(1)
+        try:
+            from leetcode_mapper import LEETCODE_ID_MAP
+            num = int(num_str)
+            if num in LEETCODE_ID_MAP:
+                title = LEETCODE_ID_MAP[num][0]
+                if title.lower() not in text.lower():
+                    return f"LeetCode {num_str} {title}"
+        except Exception:
+            pass
+        return f"LeetCode {num_str}"
+
+    return pattern.sub(_repl, text)
 
 
 def expand_acronyms(text: str) -> str:
@@ -86,12 +100,47 @@ def expand_acronyms(text: str) -> str:
     return result
 
 
+# ── DSA Concept & Phrase Normalization ─────────────────────────────────────
+# Maps common technical phrasing to canonical vocabulary used in lecture transcripts
+# (e.g. bridging Hinglish questions to DP table initialization and base case terminology).
+DSA_CONCEPT_EXPANSIONS: list[tuple[re.Pattern, str]] = [
+    (
+        re.compile(
+            r"\b(?:table\s*init(?:ialization)?|initializ(?:e|ation)\s*(?:of\s*)?(?:the\s*)?table|dp\s*table|tabulation\s*table|table\s*(?:kaise|banate|banae|create|fill))\b",
+            re.IGNORECASE,
+        ),
+        "tabulation dp table initialization base case row column 0",
+    ),
+    (
+        re.compile(r"\b(?:memo(?:ization)?|memoize)\b", re.IGNORECASE),
+        "memoization top down recursion dp array cache",
+    ),
+]
+
+
+def expand_concepts(text: str) -> str:
+    """
+    Enrich query with canonical concept terms to improve dense and sparse (BM25)
+    matching against lecture transcripts without altering original user intent.
+    """
+    result = text
+    lower_text = text.lower()
+    for pattern, expansion in DSA_CONCEPT_EXPANSIONS:
+        if pattern.search(result):
+            additions = [w for w in expansion.split() if w.lower() not in lower_text]
+            if additions:
+                result = f"{result} {' '.join(additions)}"
+                lower_text = result.lower()
+    return result
+
+
 def preprocess_query(query: str) -> str:
     """
     Full preprocessing pipeline for a user search/RAG query.
     1. Strip & normalize excess spaces
     2. Normalize LeetCode references
     3. Expand DSA acronyms
+    4. Expand canonical DSA concepts and technical vocabulary
     """
     if not query:
         return ""
@@ -99,4 +148,6 @@ def preprocess_query(query: str) -> str:
     q = re.sub(r"\s+", " ", query.strip())
     q = normalize_leetcode(q)
     q = expand_acronyms(q)
+    q = expand_concepts(q)
     return q.strip()
+

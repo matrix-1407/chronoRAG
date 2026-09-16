@@ -157,6 +157,21 @@ class RAGResponse(BaseModel):
     is_refused: bool = False
     query_processed: str = ""
     latency_ms: int = 0
+    timing: dict[str, float] = Field(default_factory=dict)
+    grounded: bool = True
+
+    @computed_field
+    def complexity(self) -> Optional[ComplexityBadge]:
+        """Backward-compatible alias for complexity_badge."""
+        return self.complexity_badge
+
+    @computed_field
+    def segments(self) -> list[dict]:
+        """Aggregated segment list across all surfaced citations for frontend transcript sync."""
+        flat: list[dict] = []
+        for c in self.citations:
+            flat.extend(c.segments)
+        return flat
 
 
 class StatsResponse(BaseModel):
