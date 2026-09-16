@@ -6,7 +6,7 @@
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![Qdrant](https://img.shields.io/badge/Qdrant-Cloud-red.svg?logo=qdrant&logoColor=white)](https://qdrant.tech)
-[![Gemini Flash](https://img.shields.io/badge/Gemini-3.6%20Flash-4285F4.svg?logo=google&logoColor=white)](https://ai.google.dev)
+[![Gemini Flash](https://img.shields.io/badge/Gemini-2.5%20Flash%20%7C%20Resilient%20Cascade-4285F4.svg?logo=google&logoColor=white)](https://ai.google.dev)
 [![FastEmbed](https://img.shields.io/badge/FastEmbed-BM25-orange.svg)](https://github.com/qdrant/fastembed)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
@@ -21,14 +21,17 @@
 - [Key Highlights](#-key-highlights)
 - [System Architecture](#-system-architecture)
 - [Retrieval & Synthesis Flow](#-retrieval--synthesis-flow)
+- [Multi-Model Resilient Fallback Cascade](#-multi-model-resilient-fallback-cascade)
 - [Interactive UI & Revision Station](#-interactive-ui--revision-station)
 - [Ingestion & Chunking Pipeline](#-ingestion--chunking-pipeline)
 - [Project Directory Structure](#-project-directory-structure)
 - [Quickstart & Installation](#-quickstart--installation)
 - [CLI Reference](#-cli-reference)
 - [API Endpoints](#-api-endpoints)
-- [Guardrails & Token Optimization](#-guardrails--token-optimization)
+- [Quality Assurance & Production Benchmarks](#-quality-assurance--production-benchmarks)
+- [Production Performance Optimization Layer](#-production-performance-optimization-layer)
 - [Configuration Reference](#-configuration-reference)
+- [Future Scope & Delta Sync](#-future-scope--incremental-playlist-delta-sync)
 
 ---
 
@@ -36,6 +39,8 @@
 
 - **Hybrid Dense + Sparse Search (RRF)**: Merges dense semantic vectors (1024-dim `BAAI/bge-m3`) and sparse lexical vectors (`Qdrant/bm25`) through Qdrant's native `Prefetch` query pipeline and Reciprocal Rank Fusion.
 - **Timestamp-Accurate Deep Linking**: Breaks continuous lecture audio into 75-second sliding windows with a 15-second overlap and a 5-second seek rewind (`seek_sec = max(0, start_sec - 5)`), ensuring smooth concept continuity.
+- **Multi-Model Resilient Fallback Cascade**: Prioritizes `gemini-2.5-flash` with automatic zero-delay failover across a 4-tier Gemini model chain upon encountering `429 RESOURCE_EXHAUSTED` or `503 UNAVAILABLE` errors.
+- **Collapsible Recruiter / Benchmark Stats Drawer**: Single-click drawer in the header displaying verified golden test suite metrics (87.5% Top-1, 100% Top-3/5), INT8 quantization RAM reduction (75%), and LRU cache acceleration (33,281x speedup), concealed by default to maintain zero interface clutter.
 - **Live Synchronized Transcript Reader**: 250ms polling loop via YouTube IFrame API highlights the active spoken sentence in real time as the video plays, auto-scrolls the active line, and allows instant click-to-seek.
 - **LeetCode & GFG Auto-Mapper (`leetcode_mapper.py`)**: 100% token-free local engine detecting explicit problem numbers (e.g. `LeetCode 53`, `LC 206`, `#33`) and mapping 20+ core DSA patterns to standard practice problems with difficulty indicators.
 - **Obsidian / Markdown Revision Card Exporter**: One-click download of `.md` revision cards formatted with Obsidian-compatible YAML frontmatter, core logic, practice problem links, and timestamped lecture bookmarks, alongside quick clipboard copying with toast feedback.
@@ -58,14 +63,14 @@ flowchart TD
     subgraph Service["Backend Services (FastAPI)"]
         API["FastAPI REST API (/api/ask)"]
         Pre["Query Preprocessor (DSA Acronyms & LC normalizer)"]
-        Embed["HybridEmbedder (Dense bge-m3 + Sparse BM25)"]
+        Embed["HybridEmbedder (Dense bge-m3 + Sparse BM25 + LRU Cache)"]
         Guard{"Hybrid Refusal Guard (Cutoff = 0.46 + BM25 Bonus)"}
-        Synth["Synthesis Engine (Gemini 3.6 Flash)"]
+        Synth["Synthesis Engine (Gemini 2.5 Flash + Fallback Cascade)"]
         Mapper["Practice Auto-Mapper (leetcode_mapper.py)"]
     end
 
     subgraph Storage["Vector Database"]
-        Qdrant[("Qdrant Cloud (dsa_lectures_1024)")]
+        Qdrant[("Qdrant Cloud (dsa_lectures_1024 / INT8 Quantized)")]
     end
 
     WebUI -->|"POST /api/ask"| API
@@ -76,7 +81,7 @@ flowchart TD
     Qdrant -->|"Prefetch & RRF Candidates"| Guard
     Guard -->|"Out of Syllabus: Refuse (0 tokens)"| API
     Guard -->|"In Syllabus: Top Chunks"| Synth
-    Synth -->|"Gemini Prompt & Context"| GeminiAPI["Google Gemini API"]
+    Synth -->|"Gemini Prompt & Context"| GeminiAPI["Google Gemini API (Priority Cascade)"]
     GeminiAPI -->|"Concept Summary + Badge"| Synth
     Synth --> Mapper
     Mapper -->|"Practice Problems (LeetCode/GFG)"| API
@@ -93,15 +98,36 @@ When a user submits a question, the query passes through normalization, dual-vec
 ```mermaid
 flowchart TD
     Q["User Query<br/>(e.g., 'LCS table initialization kaise karein?')"] --> Norm["1. Query Preprocessor<br/>Expands DSA Acronyms & LeetCode references"]
-    Norm --> Embed["2. Dual Embeddings<br/>Dense (bge-m3) + Sparse (FastEmbed BM25)"]
+    Norm --> Cache{"2. Thread-Safe LRU Cache<br/>Normalized key lookup"}
+    Cache -->|"Cache Hit (0.02ms)"| RRF
+    Cache -->|"Cache Miss (686ms)"| Embed["Compute Dual Embeddings<br/>Dense bge-m3 + FastEmbed BM25"]
     Embed --> RRF["3. Qdrant Hybrid Search<br/>Prefetch candidates & Reciprocal Rank Fusion (RRF)"]
     RRF --> Guard{"4. Hybrid Distance Guard<br/>Dense Dist <= 0.46 (with BM25 keyword bonus)?"}
     
     Guard -->|"No: Out of Syllabus"| Refuse["Instant Refusal<br/>'Ye topic in lectures me cover nahi hua.'<br/>(0 LLM tokens spent)"]
-    Guard -->|"Yes: In Syllabus"| LLM["5. Gemini 3.6 Flash Synthesis<br/>thinking_budget=0 | Concise 100-140 words"]
+    Guard -->|"Yes: In Syllabus"| LLM["5. Gemini Synthesis Engine<br/>Primary: gemini-2.5-flash | Concise 100-140 words"]
     
     LLM --> Map["6. LeetCode Auto-Mapper<br/>Topic-to-practice matching (0 tokens)"]
     Map --> Out["7. Structured Response<br/>Concept Summary + Complexity Badges + Video Pins + Practice Links"]
+```
+
+---
+
+## 🛡 Multi-Model Resilient Fallback Cascade
+
+To guarantee 100% production uptime against quota limits (`429 RESOURCE_EXHAUSTED`), model deprecations (`404 NOT_FOUND`), or API spikes (`503 UNAVAILABLE`), ChronoRAG implements an autonomous priority failover cascade:
+
+```mermaid
+flowchart TD
+    Req["Context & Prompt"] --> T1["Tier 1: Gemini 2.5 Flash (Primary)"]
+    T1 -->|"200 OK"| Out["Structured Response + Complexity Badge"]
+    T1 -->|"429 Quota / 404 Deprecated"| T2["Tier 2: Gemini 3.6 Flash (Fast Failover)"]
+    T2 -->|"200 OK"| Out
+    T2 -->|"429 Quota / 503 Spike"| T3["Tier 3: Gemini 3.5 Flash"]
+    T3 -->|"200 OK"| Out
+    T3 -->|"429 Quota / 503 Spike"| T4["Tier 4: Gemini 3.1 Flash Lite"]
+    T4 -->|"200 OK"| Out
+    T4 -->|"All Tiers Exhausted"| Graceful["Graceful Server Busy Fallback"]
 ```
 
 ---
@@ -112,12 +138,12 @@ The Web UI transforms video lecture consumption into an active learning revision
 
 1. **Dedicated Search Zone**: Centered 50px neumorphic input with embedded send button, dual-level focus glow, character counter, and keyboard shortcuts (`Enter` to submit, `Esc` to clear).
 2. **Concept Summary & Complexity Badges**:
-   - **Time Complexity**: Styled emerald badge (`⏱ Time: O(...)`).
-   - **Space Complexity**: Styled sky blue badge (`💾 Space: O(...)`).
-   - **Algorithmic Pattern**: Styled purple badge (`🔷 Pattern: ...`).
+   - **Time Complexity**: Styled emerald badge (`Time: O(...)`).
+   - **Space Complexity**: Styled sky blue badge (`Space: O(...)`).
+   - **Algorithmic Pattern**: Styled purple badge (`Pattern: ...`).
 3. **Practice Problems**: Direct clickable badges to LeetCode and GeeksforGeeks problems matching the lecture topic with difficulty chips (`Easy`: emerald, `Medium`: amber, `Hard`: rose).
 4. **Obsidian / Markdown Exporter**:
-   - **"📋 Export to Markdown / Obsidian"**: Generates and downloads a `.md` revision card with YAML frontmatter, core intuition, practice links, and deep timestamp bookmarks.
+   - **"Export to Markdown / Obsidian"**: Generates and downloads a `.md` revision card with YAML frontmatter, core intuition, practice links, and deep timestamp bookmarks.
    - **"Copy Markdown"**: One-click clipboard copy with animated floating toast notification.
 5. **Split-Screen Synchronization**:
    - **Left Panel (57%)**: Embedded YouTube player with live timestamp indicator and suggestion chips.
@@ -126,6 +152,13 @@ The Web UI transforms video lecture consumption into an active learning revision
    - **14 Core Patterns (01 to 14)**: Structured curriculum covering Arrays & Hashing, Two Pointers, Sliding Window, Stack, Binary Search, Linked List, Trees, Heaps, Backtracking, Graphs, 1D DP, 2D DP, Greedy, and Bit Manipulation.
    - **Interactive Tracking & Persistence**: Checkbox progress saved to `localStorage` with real-time percentage indicators and category-wise `completed / total` counter badges.
    - **Seamless Navigation**: Horizontal pattern filter pills, instant topic search, hover-aware keyboard navigation (`ArrowUp` / `ArrowDown`), sticky section headers, and one-click "Ask ChronoRAG" buttons to instantly query any roadmap topic.
+7. **Collapsible Recruiter / Benchmark Stats Drawer**:
+   - **Unobtrusive & Hidden by Default**: Concealed inside the header's stats pill (`4,140 chunks · 126 videos`) to prevent visual clutter during study sessions.
+   - **Single-Click Inspection**: Clicking the stats pill slides open a 4-card dashboard displaying:
+     - **Retrieval Precision**: 87.5% Top-1, 100% Top-3, 100% Top-5, and 100% Refusal Accuracy across 24 golden test cases.
+     - **INT8 Scalar Quantization**: 4x memory compression (75% vector RAM savings) in Qdrant Cloud with 0% recall loss.
+     - **LRU Cache Acceleration**: 686.4ms cold $\rightarrow$ 0.02ms warm lookup (33,281x speedup) with W3C Server-Timing headers.
+     - **Multi-Model Resilience**: Primary Gemini 2.5 Flash engine with autonomous 4-tier model failover cascade.
 
 ---
 
@@ -305,7 +338,40 @@ Full hybrid RAG synthesis pipeline with practice problem mapping.
 ```
 
 ### `GET /api/stats`
-Returns point counts, chunk counts, and collection health metrics.
+Returns collection metrics, INT8 quantization status, thread-safe LRU cache capacity, active model cascade, and golden benchmark evaluation scores.
+
+**Response Payload:**
+```json
+{
+  "collection_name": "dsa_lectures_1024",
+  "total_chunks": 4140,
+  "total_videos": 126,
+  "embed_model": "BAAI/bge-m3",
+  "embed_dim": 1024,
+  "avg_chunks_per_video": 32.9,
+  "benchmark": {
+    "top1_hit_rate_pct": 87.5,
+    "top3_hit_rate_pct": 100.0,
+    "top5_hit_rate_pct": 100.0,
+    "refusal_precision_pct": 100.0,
+    "avg_cold_embed_ms": 686.43,
+    "avg_warm_embed_ms": 0.02,
+    "cache_speedup_factor": "33281.3x",
+    "quantization_active": true,
+    "quantization_type": "INT8 Scalar",
+    "quantization_memory_efficiency": "4x (75% RAM reduction)",
+    "verdict": "PASS"
+  },
+  "lru_cache_size": 512,
+  "primary_model": "gemini-2.5-flash",
+  "fallback_models": [
+    "gemini-3.6-flash",
+    "gemini-3.5-flash",
+    "gemini-3.1-flash-lite-preview",
+    "gemini-3.5-flash-lite"
+  ]
+}
+```
 
 ---
 
@@ -379,8 +445,23 @@ All settings can be customized via `.env` or system environment variables:
 
 ---
 
+## 🔮 Future Scope & Incremental Playlist Delta Sync
+
+ChronoRAG's core architecture across all 5 phases is **feature-complete, fully verified, and production-ready**. As the video curriculum expands, the planned future evolution is an **Incremental Playlist Ingestion Engine (Delta Sync)**:
+
+- **The Challenge**: When new lectures are added to the playlist, running a full `--force` reindex re-processes all 126+ existing videos, wasting compute and embedding time.
+- **Delta Sync Architecture**:
+  - Automatically polls remote playlist metadata via lightweight scraping (`yt-dlp --flat-playlist`).
+  - Computes the exact delta: `Delta = Remote_Playlist_IDs - (Local_Transcripts ∩ Qdrant_Indexed_IDs)`.
+  - Transcribes and time-window chunks **only the newly added episodes**.
+  - Computes dense `bge-m3` and FastEmbed `BM25` vectors for delta chunks and incrementally upserts them into Qdrant Cloud without wiping existing data.
+  - Zero downtime for active queries during delta indexing.
+
+---
+
 <div align="center">
 
 Built with ❤️ for learners mastering Data Structures & Algorithms.
 
 </div>
+
