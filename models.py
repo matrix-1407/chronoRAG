@@ -100,6 +100,7 @@ class Citation(BaseModel):
     video_id: str
     title: str
     start_sec: float
+    end_sec: float = 0.0
     seek_sec: float
     youtube_url: str
     chunk_preview: str             # first 120 chars of chunk text
