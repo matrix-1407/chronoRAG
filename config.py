@@ -28,7 +28,7 @@ COLLECTION_NAME: str = os.environ.get("YTRAG_COLLECTION", "dsa_lectures_1024")
 EMBED_MODEL: str = os.environ.get("YTRAG_EMBED_MODEL", "BAAI/bge-m3")
 EMBED_DIM: int = 1024  # bge-m3 fixed output dimension
 SPARSE_MODEL: str = os.environ.get("YTRAG_SPARSE_MODEL", "Qdrant/bm25")
-GEMINI_MODEL: str = os.environ.get("YTRAG_GEMINI_MODEL", "gemini-3.5-flash")
+GEMINI_MODEL: str = os.environ.get("YTRAG_GEMINI_MODEL", "gemini-2.5-flash")
 
 # ── Chunking ───────────────────────────────────────────────────────────────
 CHUNK_DURATION: int = int(os.environ.get("YTRAG_CHUNK_SECONDS", 75))

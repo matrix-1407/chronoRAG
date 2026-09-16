@@ -198,7 +198,7 @@ def answer(
     # ── Call Gemini with Retry & Fallback ──────────────────────────────────
     client = _get_gemini_client()
 
-    max_retries = 3
+    max_retries = 4
     last_err: Exception | None = None
     response = None
 
@@ -228,8 +228,8 @@ def answer(
             err_msg = str(exc)
             # Retry on transient server errors (503 / 429)
             if ("503" in err_msg or "UNAVAILABLE" in err_msg or "429" in err_msg or "RESOURCE_EXHAUSTED" in err_msg) and attempt < max_retries - 1:
-                wait_sec = 2 ** attempt
-                print(f"[answer] Gemini transient error ({exc}), retrying in {wait_sec}s (attempt {attempt + 1}/{max_retries}) …")
+                wait_sec = (attempt + 1) * 1.5
+                print(f"[answer] Gemini transient error ({exc}), retrying in {wait_sec:.1f}s (attempt {attempt + 1}/{max_retries}) ...")
                 time.sleep(wait_sec)
                 continue
             break

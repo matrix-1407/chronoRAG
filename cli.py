@@ -344,5 +344,59 @@ def ask(
     )
 
 
+# ── benchmark (Phase 5) ────────────────────────────────────────────────────
+
+@app.command()
+def benchmark(
+    golden: Path = typer.Option(
+        Path("eval/golden.json"),
+        "--golden", "-g",
+        help="Path to golden evaluation dataset JSON",
+    ),
+    save_report: Optional[Path] = typer.Option(
+        None,
+        "--save-report", "-s",
+        help="Directory or path to save output JSON/Markdown report (default: eval/reports/)",
+    ),
+    top_k: int = typer.Option(5, "--top-k", "-k", help="Number of chunks to retrieve"),
+    url: Optional[str] = typer.Option(
+        None, "--url", "-u", help="Base URL of running FastAPI instance (default: direct pipeline)",
+    ),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Show per-case details"),
+    fail_fast: bool = typer.Option(False, "--fail-fast", help="Halt on first failing test case"),
+    limit: Optional[int] = typer.Option(None, "--limit", "-n", help="Limit number of test cases to run"),
+    retrieval_only: bool = typer.Option(
+        False,
+        "--retrieval-only", "-r",
+        help="Evaluate retrieval hit rate, refusal accuracy, and retrieval latency without calling LLM (saves API quota)",
+    ),
+) -> None:
+    """
+    Run automated QA and benchmarking suite against the golden dataset.
+    Computes Hit Rate @ K, Refusal Accuracy, Code Contamination, Latency Profiling,
+    and Token Compliance, saving formatted reports to eval/reports/.
+    """
+    from eval.evaluate import EvaluationHarness, save_reports
+
+    harness = EvaluationHarness(
+        golden_path=golden,
+        url=url,
+        top_k=top_k,
+        verbose=verbose,
+        fail_fast=fail_fast,
+        limit=limit,
+        retrieval_only=retrieval_only,
+        console=console,
+    )
+
+    output = harness.run()
+    json_path, md_path = save_reports(output, save_report)
+    console.print(f"\n[green]Saved benchmark reports:[/]\n  [cyan]{json_path}[/]\n  [cyan]{md_path}[/]\n")
+
+    if output.get("blocking_failed"):
+        raise typer.Exit(code=1)
+
+
 if __name__ == "__main__":
     app()
+

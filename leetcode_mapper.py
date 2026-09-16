@@ -32,7 +32,7 @@ LEETCODE_ID_MAP: dict[int, tuple[str, str, str]] = {
     46: ("Permutations", "permutations", "Medium"),
     47: ("Permutations II", "permutations-ii", "Medium"),
     51: ("N-Queens", "n-queens", "Hard"),
-    53: ("Maximum Subarray", "maximum-subarray", "Medium"),
+    53: ("Kadane Maximum Subarray", "maximum-subarray", "Medium"),
     55: ("Jump Game", "jump-game", "Medium"),
     56: ("Merge Intervals", "merge-intervals", "Medium"),
     57: ("Insert Interval", "insert-interval", "Medium"),

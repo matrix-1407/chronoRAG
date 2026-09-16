@@ -1,0 +1,428 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created_at": "2026-09-16",
+    "total_cases": 24,
+    "positive_cases": 16,
+    "negative_cases": 8,
+    "description": "Golden evaluation dataset for ChronoRAG (DSA TubeRAG)"
+  },
+  "test_cases": [
+    {
+      "id": "tc_001",
+      "type": "positive",
+      "category": "In-Syllabus Conceptual",
+      "query": "Kadane algorithm ka core intuition kya hai?",
+      "expected_video_ids": ["N8vJ8RyQEes", "Bt9rgQgGf64", "JUV-Hdtuzsw"],
+      "expected_topics": ["Kadane", "subarray", "maximum subarray", "sum"],
+      "expected_badge": {
+        "time": "O(n)",
+        "space": "O(1)",
+        "pattern": "Kadane's Algorithm"
+      },
+      "must_contain_keywords": ["subarray", "sum", "negative"],
+      "must_not_contain": ["```", "def ", "int main", "class Solution"],
+      "is_refusal_expected": false,
+      "expected_refusal": false,
+      "min_similarity_score": 0.50,
+      "notes": "Kadane algorithm introduction and intuition in episode 22"
+    },
+    {
+      "id": "tc_002",
+      "type": "positive",
+      "category": "In-Syllabus Conceptual",
+      "query": "LCS table initialization kaise karein?",
+      "expected_video_ids": ["YkM-xfnZ4DY"],
+      "expected_topics": ["LCS", "Longest Common Subsequence", "table", "DP"],
+      "expected_badge": {
+        "time": "O(m*n)",
+        "space": "O(m*n)",
+        "pattern": "Dynamic Programming"
+      },
+      "must_contain_keywords": ["subsequence", "matrix", "base case"],
+      "must_not_contain": ["```", "def ", "class Solution"],
+      "is_refusal_expected": false,
+      "expected_refusal": false,
+      "min_similarity_score": 0.50,
+      "notes": "LCS 20-minute masterclass episode 12"
+    },
+    {
+      "id": "tc_003",
+      "type": "positive",
+      "category": "In-Syllabus Conceptual",
+      "query": "DFS se cycle detection kaise hoti hai directed graph mein?",
+      "expected_video_ids": ["D5jgZ4PnU5o"],
+      "expected_topics": ["DFS", "cycle detection", "directed graph", "recursion stack"],
+      "expected_badge": {
+        "time": "O(V+E)",
+        "space": "O(V)",
+        "pattern": "DFS"
+      },
+      "must_contain_keywords": ["visited", "cycle", "stack"],
+      "must_not_contain": ["```", "def "],
+      "is_refusal_expected": false,
+      "expected_refusal": false,
+      "min_similarity_score": 0.50,
+      "notes": "DFS Cycle Detection from Basics to Advanced"
+    },
+    {
+      "id": "tc_004",
+      "type": "positive",
+      "category": "In-Syllabus Conceptual",
+      "query": "Two pointer technique se sorted array mein pair sum kaise dhoondhte hain?",
+      "expected_video_ids": ["ljJJcYql6Bc", "n7v0SokbF4I", "rM9EthMlXnw"],
+      "expected_topics": ["two pointer", "sorted array", "pair sum"],
+      "expected_badge": {
+        "time": "O(n)",
+        "space": "O(1)",
+        "pattern": "Two Pointers"
+      },
+      "must_contain_keywords": ["pointer", "left", "right"],
+      "must_not_contain": ["```", "def "],
+      "is_refusal_expected": false,
+      "expected_refusal": false,
+      "min_similarity_score": 0.50,
+      "notes": "Two Pointers pattern revision"
+    },
+    {
+      "id": "tc_005",
+      "type": "positive",
+      "category": "In-Syllabus Conceptual",
+      "query": "Sliding window technique kab use karni chahiye?",
+      "expected_video_ids": ["V6pRTnOZ7Mc", "DL8LSXUsfWE", "2HZ12B2ZPAQ"],
+      "expected_topics": ["sliding window", "window", "subarray"],
+      "expected_badge": {
+        "time": "O(n)",
+        "space": "O(1)",
+        "pattern": "Sliding Window"
+      },
+      "must_contain_keywords": ["window", "expand", "shrink"],
+      "must_not_contain": ["```", "def "],
+      "is_refusal_expected": false,
+      "expected_refusal": false,
+      "min_similarity_score": 0.50,
+      "notes": "Sliding window introductory lecture"
+    },
+    {
+      "id": "tc_006",
+      "type": "positive",
+      "category": "In-Syllabus Conceptual",
+      "query": "Dijkstra algorithm mein priority queue kyu use karte hain?",
+      "expected_video_ids": ["93copdtW4ZQ", "Mb01XUSuLjE"],
+      "expected_topics": ["dijkstra", "shortest path", "priority queue", "min-heap"],
+      "expected_badge": {
+        "time": "O((V+E) log V)",
+        "space": "O(V)",
+        "pattern": "Greedy / Priority Queue"
+      },
+      "must_contain_keywords": ["shortest", "distance", "priority queue"],
+      "must_not_contain": ["```", "def "],
+      "is_refusal_expected": false,
+      "expected_refusal": false,
+      "min_similarity_score": 0.50,
+      "notes": "Dijkstra algorithm explanation"
+    },
+    {
+      "id": "tc_007",
+      "type": "positive",
+      "category": "In-Syllabus Conceptual",
+      "query": "0-1 Knapsack problem mein recurrence relation kya hota hai?",
+      "expected_video_ids": ["Yp1G_KY7-wY", "LWDYXNN4SHU"],
+      "expected_topics": ["knapsack", "0/1 knapsack", "DP", "weight"],
+      "expected_badge": {
+        "time": "O(N*W)",
+        "space": "O(N*W)",
+        "pattern": "Dynamic Programming"
+      },
+      "must_contain_keywords": ["weight", "capacity", "include"],
+      "must_not_contain": ["```", "def "],
+      "is_refusal_expected": false,
+      "expected_refusal": false,
+      "min_similarity_score": 0.50,
+      "notes": "0/1 Knapsack in DP series"
+    },
+    {
+      "id": "tc_008",
+      "type": "positive",
+      "category": "In-Syllabus Conceptual",
+      "query": "Binary search mein search space reduce kaise karte hain?",
+      "expected_video_ids": ["0Kxg0LPGwFo", "zEEwwS9_fwA", "S0E1Ix67qbc"],
+      "expected_topics": ["binary search", "search space", "mid", "sorted"],
+      "expected_badge": {
+        "time": "O(log n)",
+        "space": "O(1)",
+        "pattern": "Binary Search"
+      },
+      "must_contain_keywords": ["mid", "half", "sorted"],
+      "must_not_contain": ["```", "def "],
+      "is_refusal_expected": false,
+      "expected_refusal": false,
+      "min_similarity_score": 0.50,
+      "notes": "Binary search space elimination"
+    },
+    {
+      "id": "tc_009",
+      "type": "positive",
+      "category": "In-Syllabus Conceptual",
+      "query": "Topological sort DAG mein hi kyu possible hai?",
+      "expected_video_ids": ["OSYgRvaWFSI"],
+      "expected_topics": ["topological sort", "DAG", "indegree", "Kahn"],
+      "expected_badge": {
+        "time": "O(V+E)",
+        "space": "O(V)",
+        "pattern": "Topological Sort"
+      },
+      "must_contain_keywords": ["DAG", "indegree", "dependency"],
+      "must_not_contain": ["```", "def "],
+      "is_refusal_expected": false,
+      "expected_refusal": false,
+      "min_similarity_score": 0.50,
+      "notes": "Topological sort explanation"
+    },
+    {
+      "id": "tc_010",
+      "type": "positive",
+      "category": "In-Syllabus Conceptual",
+      "query": "Heap data structure mein insertion aur extraction ki complexity kya hoti hai?",
+      "expected_video_ids": ["_1AbrkD8pak", "zzu-k85RLGs", "ks8rocoXbJk"],
+      "expected_topics": ["heap", "min heap", "max heap", "priority queue"],
+      "expected_badge": {
+        "time": "O(log n)",
+        "space": "O(n)",
+        "pattern": "Heap / Priority Queue"
+      },
+      "must_contain_keywords": ["heap", "complete binary tree", "log"],
+      "must_not_contain": ["```", "def "],
+      "is_refusal_expected": false,
+      "expected_refusal": false,
+      "min_similarity_score": 0.50,
+      "notes": "Heap data structure introductory video"
+    },
+    {
+      "id": "tc_011",
+      "type": "positive",
+      "category": "In-Syllabus Exact Problem Matching",
+      "query": "Kadane algorithm LeetCode 53 maximum subarray",
+      "expected_video_ids": ["N8vJ8RyQEes", "JUV-Hdtuzsw", "Bt9rgQgGf64"],
+      "expected_topics": ["Kadane", "Maximum Subarray", "LeetCode 53"],
+      "expected_badge": {
+        "time": "O(n)",
+        "space": "O(1)",
+        "pattern": "Kadane's Algorithm"
+      },
+      "must_contain_keywords": ["subarray", "max", "sum"],
+      "must_not_contain": ["```", "def "],
+      "is_refusal_expected": false,
+      "expected_refusal": false,
+      "min_similarity_score": 0.50,
+      "notes": "Exact match for LeetCode 53 Kadane"
+    },
+    {
+      "id": "tc_012",
+      "type": "positive",
+      "category": "In-Syllabus Exact Problem Matching",
+      "query": "LC 206 Reverse Linked List",
+      "expected_video_ids": ["5IV8CgWnf04", "BdpT6_jotcM"],
+      "expected_topics": ["reverse", "linked list", "pointer"],
+      "expected_badge": {
+        "time": "O(n)",
+        "space": "O(1)",
+        "pattern": "Linked List"
+      },
+      "must_contain_keywords": ["prev", "curr", "next"],
+      "must_not_contain": ["```", "def "],
+      "is_refusal_expected": false,
+      "expected_refusal": false,
+      "min_similarity_score": 0.50,
+      "notes": "Exact match for LC 206"
+    },
+    {
+      "id": "tc_013",
+      "type": "positive",
+      "category": "In-Syllabus Exact Problem Matching",
+      "query": "LeetCode 1 Two Sum",
+      "expected_video_ids": ["XLtRoHIDGs0", "Zr2z8DD6TuQ", "ljJJcYql6Bc"],
+      "expected_topics": ["two sum", "prefix sum", "hash map", "target"],
+      "expected_badge": {
+        "time": "O(n)",
+        "space": "O(n)",
+        "pattern": "Hash Map"
+      },
+      "must_contain_keywords": ["target", "complement", "hash"],
+      "must_not_contain": ["```", "def "],
+      "is_refusal_expected": false,
+      "expected_refusal": false,
+      "min_similarity_score": 0.50,
+      "notes": "Exact match for LeetCode 1"
+    },
+    {
+      "id": "tc_014",
+      "type": "positive",
+      "category": "In-Syllabus Exact Problem Matching",
+      "query": "LeetCode 56 Merge Intervals",
+      "expected_video_ids": ["aH5aeejuJU8", "yAopxaHmRn0"],
+      "expected_topics": ["merge intervals", "intervals", "overlap", "sorting"],
+      "expected_badge": {
+        "time": "O(n log n)",
+        "space": "O(n)",
+        "pattern": "Merge Intervals"
+      },
+      "must_contain_keywords": ["intervals", "overlap", "merge"],
+      "must_not_contain": ["```", "def "],
+      "is_refusal_expected": false,
+      "expected_refusal": false,
+      "min_similarity_score": 0.50,
+      "notes": "Exact match for LeetCode 56 Merge Intervals"
+    },
+    {
+      "id": "tc_015",
+      "type": "positive",
+      "category": "In-Syllabus Exact Problem Matching",
+      "query": "LeetCode 3 Longest Substring Without Repeating Characters",
+      "expected_video_ids": ["2HZ12B2ZPAQ", "V6pRTnOZ7Mc"],
+      "expected_topics": ["sliding window", "longest substring", "repeating"],
+      "expected_badge": {
+        "time": "O(n)",
+        "space": "O(min(m, n))",
+        "pattern": "Sliding Window"
+      },
+      "must_contain_keywords": ["window", "character", "set"],
+      "must_not_contain": ["```", "def "],
+      "is_refusal_expected": false,
+      "expected_refusal": false,
+      "min_similarity_score": 0.50,
+      "notes": "Exact match for LeetCode 3"
+    },
+    {
+      "id": "tc_016",
+      "type": "positive",
+      "category": "In-Syllabus Exact Problem Matching",
+      "query": "LC 994 Rotten Oranges",
+      "expected_video_ids": ["4L4MYtxGh9s"],
+      "expected_topics": ["rotten oranges", "multi-source BFS", "queue"],
+      "expected_badge": {
+        "time": "O(m*n)",
+        "space": "O(m*n)",
+        "pattern": "Multi-Source BFS"
+      },
+      "must_contain_keywords": ["BFS", "queue", "fresh"],
+      "must_not_contain": ["```", "def "],
+      "is_refusal_expected": false,
+      "expected_refusal": false,
+      "min_similarity_score": 0.50,
+      "notes": "Rotten oranges multi-source BFS"
+    },
+    {
+      "id": "tc_017",
+      "type": "negative",
+      "category": "Out-of-Syllabus Negative Guard",
+      "query": "React useEffect hooks kaise use karte hain?",
+      "expected_video_ids": [],
+      "expected_topics": [],
+      "expected_badge": null,
+      "must_contain_keywords": [],
+      "must_not_contain": ["useEffect", "hook", "component", "render"],
+      "is_refusal_expected": true,
+      "expected_refusal": true,
+      "notes": "React frontend framework not in DSA playlist"
+    },
+    {
+      "id": "tc_018",
+      "type": "negative",
+      "category": "Out-of-Syllabus Negative Guard",
+      "query": "Kubernetes pod lifecycle explain karo",
+      "expected_video_ids": [],
+      "expected_topics": [],
+      "expected_badge": null,
+      "must_contain_keywords": [],
+      "must_not_contain": ["pod", "kubernetes", "k8s", "cluster"],
+      "is_refusal_expected": true,
+      "expected_refusal": true,
+      "notes": "DevOps orchestration not in DSA playlist"
+    },
+    {
+      "id": "tc_019",
+      "type": "negative",
+      "category": "Out-of-Syllabus Negative Guard",
+      "query": "CSS flexbox align-items and justify-content center",
+      "expected_video_ids": [],
+      "expected_topics": [],
+      "expected_badge": null,
+      "must_contain_keywords": [],
+      "must_not_contain": ["flexbox", "justify-content", "align-items", "css"],
+      "is_refusal_expected": true,
+      "expected_refusal": true,
+      "notes": "Web styling not in DSA playlist"
+    },
+    {
+      "id": "tc_020",
+      "type": "negative",
+      "category": "Out-of-Syllabus Negative Guard",
+      "query": "Docker container networking bridge mode",
+      "expected_video_ids": [],
+      "expected_topics": [],
+      "expected_badge": null,
+      "must_contain_keywords": [],
+      "must_not_contain": ["docker", "bridge", "container", "network"],
+      "is_refusal_expected": true,
+      "expected_refusal": true,
+      "notes": "DevOps containerization not in DSA playlist"
+    },
+    {
+      "id": "tc_021",
+      "type": "negative",
+      "category": "Out-of-Syllabus Negative Guard",
+      "query": "SQL window functions RANK vs DENSE_RANK",
+      "expected_video_ids": [],
+      "expected_topics": [],
+      "expected_badge": null,
+      "must_contain_keywords": [],
+      "must_not_contain": ["rank", "dense_rank", "sql", "partition by"],
+      "is_refusal_expected": true,
+      "expected_refusal": true,
+      "notes": "Database query language not in DSA playlist"
+    },
+    {
+      "id": "tc_022",
+      "type": "negative",
+      "category": "Out-of-Syllabus Negative Guard",
+      "query": "Machine learning gradient descent learning rate decay",
+      "expected_video_ids": [],
+      "expected_topics": [],
+      "expected_badge": null,
+      "must_contain_keywords": [],
+      "must_not_contain": ["gradient descent", "learning rate", "loss function"],
+      "is_refusal_expected": true,
+      "expected_refusal": true,
+      "notes": "Machine learning not in DSA playlist"
+    },
+    {
+      "id": "tc_023",
+      "type": "negative",
+      "category": "Out-of-Syllabus Negative Guard",
+      "query": "Spring Boot dependency injection annotations",
+      "expected_video_ids": [],
+      "expected_topics": [],
+      "expected_badge": null,
+      "must_contain_keywords": [],
+      "must_not_contain": ["spring boot", "autowired", "dependency injection"],
+      "is_refusal_expected": true,
+      "expected_refusal": true,
+      "notes": "Java enterprise backend not in DSA playlist"
+    },
+    {
+      "id": "tc_024",
+      "type": "negative",
+      "category": "Out-of-Syllabus Negative Guard",
+      "query": "Mausam kaisa hai aaj Delhi mein?",
+      "expected_video_ids": [],
+      "expected_topics": [],
+      "expected_badge": null,
+      "must_contain_keywords": [],
+      "must_not_contain": ["mausam", "weather", "delhi", "temperature"],
+      "is_refusal_expected": true,
+      "expected_refusal": true,
+      "notes": "Chit-chat / weather query not in DSA playlist"
+    }
+  ]
+}

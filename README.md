@@ -6,7 +6,7 @@
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![Qdrant](https://img.shields.io/badge/Qdrant-Cloud-red.svg?logo=qdrant&logoColor=white)](https://qdrant.tech)
-[![Gemini Flash](https://img.shields.io/badge/Gemini-3.5%20Flash-4285F4.svg?logo=google&logoColor=white)](https://ai.google.dev)
+[![Gemini Flash](https://img.shields.io/badge/Gemini-2.5%20Flash-4285F4.svg?logo=google&logoColor=white)](https://ai.google.dev)
 [![FastEmbed](https://img.shields.io/badge/FastEmbed-BM25-orange.svg)](https://github.com/qdrant/fastembed)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
@@ -329,7 +329,7 @@ All settings can be customized via `.env` or system environment variables:
 | `YTRAG_COLLECTION` | `dsa_lectures_1024` | Qdrant collection name |
 | `YTRAG_EMBED_MODEL` | `BAAI/bge-m3` | Dense embedding model name (1024-dim) |
 | `YTRAG_SPARSE_MODEL` | `Qdrant/bm25` | Sparse lexical model name via FastEmbed |
-| `YTRAG_GEMINI_MODEL` | `gemini-3.5-flash` | Gemini synthesis model |
+| `YTRAG_GEMINI_MODEL` | `gemini-2.5-flash` | Gemini synthesis model |
 | `YTRAG_MAX_DISTANCE` | `0.46` | Cosine distance threshold for out-of-domain refusal |
 | `YTRAG_CHUNK_SECONDS` | `75` | Target chunk window length in seconds |
 | `YTRAG_CHUNK_OVERLAP` | `15` | Overlap between adjacent chunk windows in seconds |

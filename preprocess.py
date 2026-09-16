@@ -47,14 +47,28 @@ DSA_ACRONYMS: dict[str, str] = {
 
 def normalize_leetcode(text: str) -> str:
     """
-    Standardize LeetCode problem references.
+    Standardize LeetCode problem references and enrich with canonical titles.
     Examples:
-        "lc 206"        → "LeetCode 206"
-        "leetcode #1"   → "LeetCode 1"
-        "lc#15"         → "LeetCode 15"
+        "lc 206"        → "LeetCode 206 Reverse Linked List"
+        "leetcode #1"   → "LeetCode 1 Two Sum"
+        "lc#15"         → "LeetCode 15 3Sum"
     """
     pattern = re.compile(r"\b(?:lc|leetcode)\s*#?\s*(\d+)\b", re.IGNORECASE)
-    return pattern.sub(r"LeetCode \1", text)
+
+    def _repl(m: re.Match) -> str:
+        num_str = m.group(1)
+        try:
+            from leetcode_mapper import LEETCODE_ID_MAP
+            num = int(num_str)
+            if num in LEETCODE_ID_MAP:
+                title = LEETCODE_ID_MAP[num][0]
+                if title.lower() not in text.lower():
+                    return f"LeetCode {num_str} {title}"
+        except Exception:
+            pass
+        return f"LeetCode {num_str}"
+
+    return pattern.sub(_repl, text)
 
 
 def expand_acronyms(text: str) -> str:

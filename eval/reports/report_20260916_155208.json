@@ -1,0 +1,203 @@
+{
+  "metadata": {
+    "timestamp": "2026-09-16T15:51:17.082294",
+    "duration_seconds": 51.52,
+    "golden_path": "eval\\golden.json",
+    "mode": "direct_pipeline",
+    "api_url": null,
+    "top_k": 5,
+    "total_cases": 3,
+    "positive_cases": 3,
+    "negative_cases": 0
+  },
+  "aggregates": {
+    "hit_rate_at_1": 1.0,
+    "hit_rate_at_3": 1.0,
+    "hit_rate_at_5": 1.0,
+    "refusal_accuracy": 0.0,
+    "false_positive_rate": 0.0,
+    "code_contamination_rate": 0.0,
+    "badge_presence_rate": 0.6667,
+    "keyword_coverage_score": 0.5557,
+    "token_budget_compliance": 1.0,
+    "mean_latency_ms": 17167,
+    "p95_latency_ms": 24984,
+    "mean_retrieval_latency_ms": 8080,
+    "mean_generation_latency_ms": 9086
+  },
+  "thresholds": {
+    "hit_rate_at_5": {
+      "label": "Hit Rate @ 5",
+      "value": 1.0,
+      "target": 0.8,
+      "comparator": ">=",
+      "blocking": true,
+      "passed": true
+    },
+    "hit_rate_at_3": {
+      "label": "Hit Rate @ 3",
+      "value": 1.0,
+      "target": 0.7,
+      "comparator": ">=",
+      "blocking": false,
+      "passed": true
+    },
+    "hit_rate_at_1": {
+      "label": "Hit Rate @ 1",
+      "value": 1.0,
+      "target": 0.5,
+      "comparator": ">=",
+      "blocking": false,
+      "passed": true
+    },
+    "refusal_accuracy": {
+      "label": "Refusal Accuracy",
+      "value": 0.0,
+      "target": 0.95,
+      "comparator": ">=",
+      "blocking": true,
+      "passed": false
+    },
+    "false_positive_rate": {
+      "label": "False Positive Rate",
+      "value": 0.0,
+      "target": 0.05,
+      "comparator": "<=",
+      "blocking": true,
+      "passed": true
+    },
+    "code_contamination_rate": {
+      "label": "Code Contamination",
+      "value": 0.0,
+      "target": 0.0,
+      "comparator": "==",
+      "blocking": true,
+      "passed": true
+    },
+    "badge_presence_rate": {
+      "label": "Badge Presence Rate",
+      "value": 0.6667,
+      "target": 0.9,
+      "comparator": ">=",
+      "blocking": false,
+      "passed": false
+    },
+    "keyword_coverage_score": {
+      "label": "Keyword Coverage",
+      "value": 0.5557,
+      "target": 0.6,
+      "comparator": ">=",
+      "blocking": false,
+      "passed": false
+    },
+    "token_budget_compliance": {
+      "label": "Token Budget Compliance",
+      "value": 1.0,
+      "target": 1.0,
+      "comparator": "==",
+      "blocking": true,
+      "passed": true
+    },
+    "mean_latency_ms": {
+      "label": "Mean Latency (ms)",
+      "value": 17167,
+      "target": 3500,
+      "comparator": "<=",
+      "blocking": false,
+      "passed": false
+    },
+    "p95_latency_ms": {
+      "label": "P95 Latency (ms)",
+      "value": 24984,
+      "target": 5500,
+      "comparator": "<=",
+      "blocking": false,
+      "passed": false
+    }
+  },
+  "verdict": "FAIL",
+  "blocking_failed": true,
+  "cases": [
+    {
+      "id": "tc_001",
+      "type": "positive",
+      "category": "In-Syllabus Conceptual",
+      "query": "Kadane algorithm ka core intuition kya hai?",
+      "passed": true,
+      "is_negative": false,
+      "hits_at_k": {
+        "1": true,
+        "3": true,
+        "5": true
+      },
+      "is_refused": false,
+      "is_correctly_refused": null,
+      "is_false_positive": false,
+      "has_code_contamination": false,
+      "has_badge": true,
+      "keyword_coverage": 0.667,
+      "is_token_compliant": true,
+      "tokens_used": 1760,
+      "retrieval_latency_ms": 16159,
+      "generation_latency_ms": 10107,
+      "total_latency_ms": 26266,
+      "retrieval_distance": 0.3781,
+      "citations_count": 2,
+      "answer_preview": "**Core Intuition:** Kadane's Algorithm ka main idea hai har index `i` par **best ending subarray** find karna [5]. Yeh algorithm local decis..."
+    },
+    {
+      "id": "tc_002",
+      "type": "positive",
+      "category": "In-Syllabus Conceptual",
+      "query": "LCS table initialization kaise karein?",
+      "passed": true,
+      "is_negative": false,
+      "hits_at_k": {
+        "1": true,
+        "3": true,
+        "5": true
+      },
+      "is_refused": false,
+      "is_correctly_refused": null,
+      "is_false_positive": false,
+      "has_code_contamination": false,
+      "has_badge": true,
+      "keyword_coverage": 1.0,
+      "is_token_compliant": true,
+      "tokens_used": 1787,
+      "retrieval_latency_ms": 5143,
+      "generation_latency_ms": 8311,
+      "total_latency_ms": 13455,
+      "retrieval_distance": 0.454,
+      "citations_count": 2,
+      "answer_preview": "**Core Intuition:** Longest Common Subsequence (LCS) me hum do strings ke characters ko compare karte hain [1]. Tabulation table (DP table) ..."
+    },
+    {
+      "id": "tc_003",
+      "type": "positive",
+      "category": "In-Syllabus Conceptual",
+      "query": "DFS se cycle detection kaise hoti hai directed graph mein?",
+      "passed": true,
+      "is_negative": false,
+      "hits_at_k": {
+        "1": true,
+        "3": true,
+        "5": true
+      },
+      "is_refused": false,
+      "is_correctly_refused": null,
+      "is_false_positive": false,
+      "has_code_contamination": false,
+      "has_badge": false,
+      "keyword_coverage": 0.0,
+      "is_token_compliant": true,
+      "tokens_used": 1526,
+      "retrieval_latency_ms": 2938,
+      "generation_latency_ms": 8842,
+      "total_latency_ms": 11781,
+      "retrieval_distance": 0.3897,
+      "citations_count": 1,
+      "answer_preview": "Ye topic in lectures me cover nahi hua."
+    }
+  ]
+}
