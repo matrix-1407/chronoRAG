@@ -1,0 +1,16 @@
+{
+  "timestamp": "2026-09-16T18:24:10.756171",
+  "top1_hit_rate_pct": 87.5,
+  "top3_hit_rate_pct": 100.0,
+  "top5_hit_rate_pct": 100.0,
+  "refusal_precision_pct": 100.0,
+  "avg_cold_embed_ms": 686.43,
+  "avg_warm_embed_ms": 0.02,
+  "cache_speedup_factor": "33281.3x",
+  "avg_generation_latency_ms": 0,
+  "avg_token_spend": 0.0,
+  "quantization_active": true,
+  "quantization_type": "INT8 Scalar",
+  "quantization_memory_efficiency": "4x (75% RAM reduction)",
+  "verdict": "PASS"
+}

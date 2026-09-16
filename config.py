@@ -41,12 +41,12 @@ UNIQUE_RATIO_THRESHOLD: float = 0.35   # Whisper repetition filter
 # ── Retrieval (Hybrid & RRF) ────────────────────────────────────────────────
 MAX_DISTANCE: float = float(os.environ.get("YTRAG_MAX_DISTANCE", 0.46))
 TOP_K: int = 5
-TOP_K_DENSE: int = int(os.environ.get("YTRAG_TOP_K_DENSE", 10))
-TOP_K_SPARSE: int = int(os.environ.get("YTRAG_TOP_K_SPARSE", 10))
+TOP_K_DENSE: int = int(os.environ.get("YTRAG_TOP_K_DENSE", 25))
+TOP_K_SPARSE: int = int(os.environ.get("YTRAG_TOP_K_SPARSE", 25))
 RRF_K: int = int(os.environ.get("YTRAG_RRF_K", 60))
 
 # ── Generation ─────────────────────────────────────────────────────────────
-MAX_OUTPUT_TOKENS: int = int(os.environ.get("YTRAG_MAX_OUTPUT_TOKENS", 300))
+MAX_OUTPUT_TOKENS: int = int(os.environ.get("YTRAG_MAX_OUTPUT_TOKENS", 450))
 TEMPERATURE: float = 0.1
 TOP_P: float = 0.8
 TOP_K_GEMINI: int = 20
