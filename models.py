@@ -159,6 +159,7 @@ class RAGResponse(BaseModel):
     latency_ms: int = 0
     timing: dict[str, float] = Field(default_factory=dict)
     grounded: bool = True
+    model_used: str = ""
 
     @computed_field
     def complexity(self) -> Optional[ComplexityBadge]:

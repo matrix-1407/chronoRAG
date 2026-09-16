@@ -345,6 +345,11 @@ ChronoRAG features an automated evaluation suite ([`eval/evaluate.py`](eval/eval
    - Supplies granular timing breakdowns in `/api/ask` responses (`timing.embed_ms`, `timing.retrieval_ms`, `timing.generation_ms`, `timing.total_ms`).
 4. **Canonical Concept Expansion (`preprocess.py`)**:
    - Enriches domain-specific queries (e.g. DP table initialization, memoization base cases) with canonical speech vocabulary used by instructors (`"tabulation dp table initialization base case row column 0"`), ensuring precision retrieval across complex algorithmic segments.
+5. **Multi-Model Resilient Fallback Pipeline (`answer.py`, `config.py`)**:
+   - Prioritizes `gemini-2.5-flash` as the primary synthesis engine.
+   - Automatically fast-cascades through a prioritized fallback chain (`gemini-3.6-flash` -> `gemini-3.5-flash` -> `gemini-3.1-flash-lite-preview` -> `gemini-3.5-flash-lite`) upon encountering `429 RESOURCE_EXHAUSTED`, `503 UNAVAILABLE`, or deprecated endpoints.
+   - Features adaptive `thinking_budget` handling: applies `thinking_budget=0` for speed on full Flash models and automatically adapts for Lite models.
+   - Surfaces `model_used` in API responses and CLI output for transparent observability.
 
 ---
 
@@ -360,7 +365,8 @@ All settings can be customized via `.env` or system environment variables:
 | `YTRAG_COLLECTION` | `dsa_lectures_1024` | Qdrant collection name |
 | `YTRAG_EMBED_MODEL` | `BAAI/bge-m3` | Dense embedding model name (1024-dim) |
 | `YTRAG_SPARSE_MODEL` | `Qdrant/bm25` | Sparse lexical model name via FastEmbed |
-| `YTRAG_GEMINI_MODEL` | `gemini-3.6-flash` | Gemini synthesis model |
+| `YTRAG_GEMINI_MODEL` | `gemini-2.5-flash` | Primary Gemini synthesis model |
+| `YTRAG_GEMINI_FALLBACKS` | `gemini-3.6-flash,gemini-3.5-flash,gemini-3.1-flash-lite-preview,gemini-3.5-flash-lite` | Prioritized fallback model chain on 429/503/errors |
 | `YTRAG_MAX_DISTANCE` | `0.46` | Cosine distance threshold for out-of-domain refusal |
 | `YTRAG_TOP_K_DENSE` | `25` | Dense candidates prefetch pool for RRF |
 | `YTRAG_TOP_K_SPARSE` | `25` | Sparse candidates prefetch pool for RRF |

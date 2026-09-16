@@ -312,7 +312,8 @@ def ask(
         # Display badge separately from the text body for readability
         content = resp.answer.replace(badge_line, "").strip()
 
-    console.print(Panel(content, title="Answer", border_style="green"))
+    answer_title = f"Answer ({resp.model_used})" if resp.model_used else "Answer"
+    console.print(Panel(content, title=answer_title, border_style="green"))
     if badge_line:
         console.print(f"\n[bold magenta]{badge_line}[/]")
 

@@ -209,44 +209,67 @@ def answer(
         f"Question: {query_processed or query}"
     )
 
-    # ── Call Gemini with Retry & Fallback ──────────────────────────────────
+    # ── Call Gemini with Multi-Model Fallback Pipeline ─────────────────────
     client = _get_gemini_client()
+    model_pipeline = config.get_model_pipeline()
 
-    max_retries = 4
-    last_err: Exception | None = None
     response = None
+    successful_model: str = ""
+    last_err: Exception | None = None
 
     t_gen_start = time.perf_counter()
-    for attempt in range(max_retries):
-        try:
-            response = client.models.generate_content(
-                model=config.GEMINI_MODEL,
-                contents=[
-                    genai_types.Content(
-                        role="user",
-                        parts=[genai_types.Part(text=user_turn)],
-                    )
-                ],
-                config=genai_types.GenerateContentConfig(
+
+    for model_name in model_pipeline:
+        is_lite = "lite" in model_name.lower()
+        supports_thinking = not is_lite
+
+        # Up to 2 attempts per model for transient server blips
+        for attempt in range(2):
+            try:
+                gen_cfg = genai_types.GenerateContentConfig(
                     system_instruction=SYSTEM_PROMPT,
                     temperature=config.TEMPERATURE,
                     max_output_tokens=config.MAX_OUTPUT_TOKENS,
                     top_p=config.TOP_P,
                     top_k=config.TOP_K_GEMINI,
                     candidate_count=1,
-                    thinking_config=genai_types.ThinkingConfig(thinking_budget=0),
-                ),
-            )
-            break
-        except Exception as exc:
-            last_err = exc
-            err_msg = str(exc)
-            # Retry on transient server errors (503 / 429)
-            if ("503" in err_msg or "UNAVAILABLE" in err_msg or "429" in err_msg or "RESOURCE_EXHAUSTED" in err_msg) and attempt < max_retries - 1:
-                wait_sec = (attempt + 1) * 1.5
-                print(f"[answer] Gemini transient error ({exc}), retrying in {wait_sec:.1f}s (attempt {attempt + 1}/{max_retries}) ...")
-                time.sleep(wait_sec)
-                continue
+                    thinking_config=genai_types.ThinkingConfig(thinking_budget=0) if supports_thinking else None,
+                )
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=[
+                        genai_types.Content(
+                            role="user",
+                            parts=[genai_types.Part(text=user_turn)],
+                        )
+                    ],
+                    config=gen_cfg,
+                )
+                successful_model = model_name
+                break
+            except Exception as exc:
+                last_err = exc
+                err_msg = str(exc)
+
+                # If thinking_config caused 400 INVALID_ARGUMENT, retry without it immediately
+                if ("INVALID_ARGUMENT" in err_msg or "400" in err_msg) and supports_thinking:
+                    supports_thinking = False
+                    continue
+
+                # Hard quota exhausted (429) or model not found (404): fast fallback without delay
+                if "429" in err_msg or "RESOURCE_EXHAUSTED" in err_msg or "404" in err_msg or "NOT_FOUND" in err_msg:
+                    print(f"[answer] Model '{model_name}' unavailable/quota exceeded ({exc.__class__.__name__}). Falling back...")
+                    break
+
+                # Transient 503 / UNAVAILABLE: brief sleep and retry once
+                if ("503" in err_msg or "UNAVAILABLE" in err_msg) and attempt < 1:
+                    time.sleep(0.6)
+                    continue
+
+                print(f"[answer] Model '{model_name}' error ({err_msg[:80]}). Falling back...")
+                break
+
+        if response is not None:
             break
 
     timing["generation_ms"] = round((time.perf_counter() - t_gen_start) * 1000, 2)
@@ -327,4 +350,5 @@ def answer(
         query_processed=query_processed or query,
         latency_ms=_elapsed_ms(),
         timing=timing,
+        model_used=successful_model,
     )
